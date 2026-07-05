@@ -1,0 +1,36 @@
+# GuildPlugin 变量列表
+
+# 基本信息
+基本信息:
+  "%guild_name%": "公会名称"
+  "%guild_tag%": "公会标签"
+  "%guild_tag_color%": "公会标签颜色代码"
+  "%guild_owner%": "公会会长名称"
+  "%guild_member_count%": "公会成员数量"
+  "%guild_motd%": "公会公告"
+
+# 等级与经验
+等级经验:
+  "%guild_level%": "公会等级"
+  "%guild_experience%": "公会当前经验值"
+  "%guild_required_experience%": "升级所需经验值"
+
+# 玩家角色与贡献
+玩家信息:
+  "%guild_role%": "玩家角色(会长/官员/成员)"
+  "%guild_role_level%": "角色等级(3/2/1)"
+  "%guild_contribution%": "玩家总贡献值"
+  "%guild_daily_contribution%": "玩家今日贡献值"
+  "%guild_joined_time%": "加入时间戳"
+
+# 权限判断
+权限判断:
+  "%guild_has_guild%": "是否加入公会"
+  "%guild_is_owner%": "是否为会长"
+  "%guild_is_officer%": "是否为官员"
+  "%guild_is_member%": "是否为成员"
+
+# 货币系统
+货币系统:
+  "%guild_bank_balance%": "公会银行余额"
+  "%guild_currency%": "玩家公会币余额"

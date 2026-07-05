@@ -1,0 +1,76 @@
+# ============================================================
+#  Guild 插件主配置文件 v3.1.0
+#  修改后使用 /guild reload 重载配置（部分选项需重启）
+# ============================================================
+
+# ---------- 语言设置 ----------
+# 可选值: zh_cn, zh_tw, en_us（对应 message.yml / lang/ 下的文件）
+language: zh_cn
+
+# ========== 功能开关 ==========
+features:
+  bank-enabled:           true    # 公会银行系统
+  chat-enabled:           true    # 公会聊天频道
+  experience-enabled:     true    # 经验/贡献度系统
+  level-enabled:          true    # 公会等级系统
+  motd-enabled:           true    # 公会公告(MOTD)
+  tag-enabled:            true    # 公会标签显示
+  nickname-enabled:       true    # 成员昵称功能
+  notification-enabled:   true    # 上下线通知
+  gui-enabled:            true    # GUI 界面
+
+# ========== 货币系统 ==========
+currency:
+  # 货币类型（决定创建/升级/购买经验时扣除哪种货币）
+  #   GUILD_COIN  - 内置公会币（默认，无需外部插件）
+  #   VAULT       - Vault 经济插件（需要服务端安装 Vault + 经济插件）
+  #   PLAYERPOINTS- PlayerPoints 积分插件
+  type: GUILD_COIN
+
+  # 升级公会所需货币数量
+  level-up-cost: 100000
+
+  # 购买经验：消耗货币 / 获得经验值
+  experience-cost: 5000
+  experience-amount: 50
+
+  # 各货币的显示名称（仅用于消息提示）
+  display-names:
+    guild_coin: "公会币"
+    vault: "金币"
+    playerpoints: "积分"
+
+# ========== 公会规则 ==========
+guild:
+  max-level:        100     # 最高等级上限
+  members-per-level: 5      # 每级增加的最大成员数（基础成员数由代码定义）
+  default-tag-color: "&f"   # 默认标签颜色
+  min-name-length:   3      # 公会名称最短长度
+  max-name-length:   16     # 公会名称最长长度
+  max-tag-length:    4      # 标签最长长度
+  create-cost:       0      # 创建公会所需货币（0 = 免费）
+  disband-cooldown: 86400   # 解散冷却时间（秒），默认24小时
+
+# ========== 经验获取规则 ==========
+experience:
+  monster-kill: 10    # 击杀怪物获得的经验值
+  block-break:  5      # 挖掘方块获得的经验值
+  block-place:  3      # 放置方块获得的经验值
+  player-kill: 50      # 击杀玩家获得的经验值
+
+# ========== 数据库设置 ==========
+database:
+  # 数据库类型：
+  #   sqlite  - 内置 SQLite（默认，数据存储在 plugins/Guild/guild.db）
+  #   mysql   - 外部 MySQL/MariaDB（需填写下方连接信息）
+  type: sqlite
+
+  # --- 仅 type=mysql 时需要填写 ---
+  host: localhost
+  port: 3306
+  database: guild
+  username: root
+  password: ""
+  # 连接池参数（MySQL 模式下生效）
+  pool-size: 10
+  connection-timeout: 30000
