@@ -7,6 +7,7 @@ import com.guild.gui.GuildManageGUI;
 import com.guild.guild.Guild;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -51,6 +52,9 @@ public class ChatInputListener implements Listener {
             case "guild_name":
                 handleGuildNameCreation(player, input);
                 break;
+            case "guild_tag_for_create":
+                handleGuildTagForCreate(player, input, action.getContext());
+                break;
             case "guild_tag":
                 handleGuildTagSetting(player, input, action.getContext());
                 break;
@@ -69,6 +73,11 @@ public class ChatInputListener implements Listener {
     }
 
     private void handleGuildNameCreation(Player player, String input) {
+        if (input.equalsIgnoreCase("cancel")) {
+            player.sendMessage(ChatColor.YELLOW + "已取消创建公会");
+            return;
+        }
+        
         int minLen = plugin.getConfig().getInt("guild.min-name-length", 3);
         int maxLen = plugin.getConfig().getInt("guild.max-name-length", 16);
         
@@ -86,8 +95,40 @@ public class ChatInputListener implements Listener {
             player.sendMessage(plugin.getMessage("guild.already-exists"));
             return;
         }
-        plugin.getGuildManager().createGuild(input, player);
-        player.sendMessage(plugin.getMessage("guild.created").replace("%name%", input));
+        
+        player.sendMessage(ChatColor.YELLOW + "========== 创建公会 ==========");
+        player.sendMessage(ChatColor.GOLD + "公会名称: " + input);
+        player.sendMessage(ChatColor.GOLD + "请输入公会标签（1-6字符）");
+        player.sendMessage(ChatColor.GRAY + "输入 'cancel' 取消创建");
+        registerPendingAction(player.getUniqueId(), "guild_tag_for_create", input);
+    }
+
+    private void handleGuildTagForCreate(Player player, String input, Object context) {
+        String guildName = (String) context;
+        
+        if (input.equalsIgnoreCase("cancel")) {
+            player.sendMessage(ChatColor.YELLOW + "已取消创建公会");
+            return;
+        }
+        
+        if (input.length() < 1 || input.length() > 6) {
+            player.sendMessage(plugin.getMessage("guild.tag-length-invalid"));
+            player.sendMessage(ChatColor.GOLD + "请重新输入公会标签（1-6字符）");
+            registerPendingAction(player.getUniqueId(), "guild_tag_for_create", guildName);
+            return;
+        }
+        
+        Guild guild = plugin.getGuildManager().createGuild(guildName, player);
+        if (guild == null) {
+            player.sendMessage(plugin.getMessage("guild.already-exists"));
+            return;
+        }
+        
+        guild.setTag(input);
+        plugin.getDatabaseManager().saveGuild(guild);
+        player.sendMessage(plugin.getMessage("guild.created").replace("%name%", guildName));
+        player.sendMessage(ChatColor.GREEN + "公会标签已设置为: " + input);
+        
         final Player finalPlayer = player;
         Bukkit.getScheduler().runTask(plugin, () -> GuildGUI.openGUI(plugin, finalPlayer));
     }

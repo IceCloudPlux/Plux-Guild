@@ -98,7 +98,7 @@ public class Guild {
     }
 
     public long getRequiredExperience() {
-        return (long) (1000.0 * Math.pow(1.5, level));
+        return (long) (500.0 * level * (1 + level * 0.02));
     }
 
     // ========== 权限检查 ==========

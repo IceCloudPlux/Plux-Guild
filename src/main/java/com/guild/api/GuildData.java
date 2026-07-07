@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
  * 封装内部 {@link Guild} 对象，对外提供安全的只读访问。
  * 所有返回值都是防御性拷贝或不可修改视图，防止外部修改内部状态。
  *
- * @since 3.1.0
+ * @since 3.0.1
  */
 public final class GuildData {
 

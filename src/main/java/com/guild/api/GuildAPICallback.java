@@ -19,7 +19,7 @@ import java.util.UUID;
  * </pre>
  *
  * @param <T> 操作结果类型
- * @since 3.1.0
+ * @since 3.0.1
  */
 @FunctionalInterface
 public interface GuildAPICallback<T> {

@@ -6,7 +6,7 @@
 
     <groupId>com.guild</groupId>
     <artifactId>Guild</artifactId>
-    <version>3.1.0</version>
+    <version>3.0.2</version>
     <packaging>jar</packaging>
 
     <name>Guild</name>
@@ -127,10 +127,23 @@
                                     <shadedPattern>com.guild.lib.hikari</shadedPattern>
                                 </relocation>
                             </relocations>
-                            <!-- 最小化依赖传递 -->
-                            <minimizeJar>true</minimizeJar>
+                            <!-- 禁用最小化，避免 ART 重映射冲突 -->
+                            <minimizeJar>false</minimizeJar>
                             <!-- 创建 shade 产物摘要文件（调试用） -->
                             <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <!-- 排除可能导致 ART 冲突的文件 -->
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                        <exclude>META-INF/versions/**</exclude>
+                                        <exclude>module-info.class</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
                         </configuration>
                     </execution>
                 </executions>

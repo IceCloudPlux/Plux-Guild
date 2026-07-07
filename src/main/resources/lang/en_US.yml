@@ -8,7 +8,7 @@ plugin.enabled: Guild plugin enabled!
 plugin.disabling: Disabling Guild
 plugin.disabled: Guild plugin disabled!
 plugin.author: Author: ya_xzer21145
-plugin.version: v3.1.0
+plugin.version: v3.0.2
 
 guild.created: "&aSuccessfully created guild: %name%"
 guild.deleted: "&cGuild has been disbanded"

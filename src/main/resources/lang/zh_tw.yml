@@ -8,7 +8,7 @@ plugin.enabled: Guild 插件已啟用!
 plugin.disabling: 正在停用 Guild
 plugin.disabled: Guild 插件已停用!
 plugin.author: 作者: ya_xzer21145
-plugin.version: v3.1.0
+plugin.version: v3.0.2
 
 guild.created: "&a成功創建公會: %name%"
 guild.deleted: "&c公會已解散"

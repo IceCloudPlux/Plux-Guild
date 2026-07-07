@@ -41,6 +41,7 @@ public class GuildPlugin extends JavaPlugin {
     private final Map<String, String> messages = new HashMap<>();
     private String currentLanguage;
     private PlayerNameCache playerNameCache;
+    private ChatInputListener chatInputListener;
 
     @Override
     public void onEnable() {
@@ -190,7 +191,7 @@ public class GuildPlugin extends JavaPlugin {
 
     private void registerListeners() {
         Bukkit.getPluginManager().registerEvents((Listener) new PlayerListener(this), this);
-        ChatInputListener chatInputListener = new ChatInputListener(this);
+        chatInputListener = new ChatInputListener(this);
         InventoryListener inventoryListener = new InventoryListener(this);
         inventoryListener.setChatInputListener(chatInputListener);
         Bukkit.getPluginManager().registerEvents((Listener) inventoryListener, this);
@@ -219,6 +220,10 @@ public class GuildPlugin extends JavaPlugin {
 
     public GuildManager getGuildManager() {
         return guildManager;
+    }
+
+    public ChatInputListener getChatInputListener() {
+        return chatInputListener;
     }
 
     public GUIConfig getGUIConfig() {

@@ -9,7 +9,7 @@ plugin.enabled: Guild 插件已启用!
 plugin.disabling: 正在禁用 Guild
 plugin.disabled: Guild 插件已禁用!
 plugin.author: 作者: ya_xzer21145
-plugin.version: v3.1.0
+plugin.version: v3.0.2
 
 # ---------- 公会核心 ----------
 guild.created: "&a成功创建公会: %name%"

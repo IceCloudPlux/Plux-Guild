@@ -21,6 +21,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.*;
 import org.bukkit.event.inventory.InventoryType.SlotType;
+import org.bukkit.inventory.AnvilInventory;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -202,6 +203,13 @@ public class InventoryListener implements Listener {
             text = anvilView.getRenameText();
         }
 
+        if ((text == null || text.isEmpty()) && event.getInventory() instanceof AnvilInventory) {
+            AnvilInventory anvilInv = (AnvilInventory) event.getInventory();
+            try {
+                text = anvilInv.getRenameText();
+            } catch (NoSuchMethodError ignored) {}
+        }
+
         if (text == null || text.isEmpty()) {
             ItemStack result = event.getResult();
             if (result != null && result.hasItemMeta()) {
@@ -212,13 +220,31 @@ public class InventoryListener implements Listener {
         if (text != null && !text.isEmpty()) {
             ANVIL_TEXT_CACHE.put(uuid, text);
         }
+
+        ItemStack slot0 = event.getInventory().getItem(0);
+        if (slot0 != null) {
+            ItemStack result = slot0.clone();
+            ItemMeta meta = result.getItemMeta();
+            if (meta != null) {
+                String displayName = (text != null && !text.isEmpty()) ? text : ChatColor.GRAY + "请输入名称";
+                meta.setDisplayName(ChatColor.GREEN + displayName);
+                result.setItemMeta(meta);
+            }
+            event.setResult(result);
+        }
     }
 
     // ========== 无公会界面点击 ==========
 
     private void handleNoGuildClick(Player player, String name) {
         if (name.contains("创建公会")) {
-            openGuildNameAnvil(player);
+            player.closeInventory();
+            int minLen = plugin.getConfig().getInt("guild.min-name-length", 3);
+            int maxLen = plugin.getConfig().getInt("guild.max-name-length", 16);
+            player.sendMessage(ChatColor.YELLOW + "========== 创建公会 ==========");
+            player.sendMessage(ChatColor.GOLD + "请在聊天框输入公会名称（" + minLen + "-" + maxLen + "字符）");
+            player.sendMessage(ChatColor.GRAY + "输入 'cancel' 取消创建");
+            plugin.getChatInputListener().registerPendingAction(player.getUniqueId(), "guild_name", null);
         } else if (name.contains("查看所有公会")) {
             GuildGUI.openGuildListGUI(plugin, player);
         }
@@ -447,22 +473,28 @@ public class InventoryListener implements Listener {
 
         if (event.getRawSlot() != 2) return true;
 
-        String input = null;
-
-        if (event.getView() instanceof AnvilView) {
-            AnvilView anvilView = (AnvilView) event.getView();
-            input = anvilView.getRenameText();
-        }
-
-        if (input == null || input.isEmpty()) {
-            input = ANVIL_TEXT_CACHE.get(uuid);
-        }
+        String input = ANVIL_TEXT_CACHE.get(uuid);
 
         if (input == null || input.isEmpty()) {
             ItemStack result = event.getCurrentItem();
             if (result != null && result.hasItemMeta()) {
                 input = ChatColor.stripColor(result.getItemMeta().getDisplayName());
             }
+        }
+
+        if (input != null && input.startsWith(ChatColor.GREEN.toString())) {
+            input = input.substring(2);
+        }
+
+        if (input == null || input.isEmpty()) {
+            ItemStack slot1 = topInv.getItem(1);
+            if (slot1 != null && slot1.hasItemMeta()) {
+                input = ChatColor.stripColor(slot1.getItemMeta().getDisplayName());
+            }
+        }
+
+        if (input != null && input.startsWith(ChatColor.GREEN.toString())) {
+            input = input.substring(2);
         }
 
         if (input == null || input.isEmpty()) {

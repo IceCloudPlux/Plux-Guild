@@ -14,7 +14,7 @@ import java.util.concurrent.CompletableFuture;
  * 定义公会系统的核心操作契约，支持依赖注入和 Mock 测试。
  * 通过 {@link GuildAPI#getInstance()} 获取默认实现。
  *
- * @since 3.1.0
+ * @since 3.0.1
  */
 public interface GuildAPIProvider {
 

@@ -7,7 +7,7 @@ import java.util.UUID;
  * <p>
  * 封装内部邀请数据，对外提供安全的只读访问。
  *
- * @since 3.1.0
+ * @since 3.0.1
  */
 public final class GuildInviteInfo {
 
