@@ -2,7 +2,7 @@
 
 > 功能全面的 Minecraft 公会管理插件 - 支持 GUI/等级经验/银行系统/聊天频道/多货币 | 兼容 1.8 ~ 26.1+
 
-![version](https://img.shields.io/badge/version-3.0.1-orange)
+![version](https://img.shields.io/badge/version-3.0.2-orange)
 ![Java](https://img.shields.io/badge/Java-8-blue)
 ![Folia](https://img.shields.io/badge/Folia-supported-green)
 
