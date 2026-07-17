@@ -35,15 +35,15 @@ public class GUIConfig {
     }
 
     public String getMemberTitle(String string) {
-        return ChatColor.translateAlternateColorCodes((char)'&', (String)this.config.getString("gui.title.member", "&6\u516c\u4f1a: &e{name}").replace("{name}", string));
+        return ChatColor.translateAlternateColorCodes((char)'&', (String)this.config.getString("gui.title.member", "&6\u516c\u4f1a: &e%name%").replace("%name%", string));
     }
 
     public String getOfficerTitle(String string) {
-        return ChatColor.translateAlternateColorCodes((char)'&', (String)this.config.getString("gui.title.officer", "&6\u516c\u4f1a\u7ba1\u7406: &e{name}").replace("{name}", string));
+        return ChatColor.translateAlternateColorCodes((char)'&', (String)this.config.getString("gui.title.officer", "&6\u516c\u4f1a\u7ba1\u7406: &e%name%").replace("%name%", string));
     }
 
     public String getOwnerTitle(String string) {
-        return ChatColor.translateAlternateColorCodes((char)'&', (String)this.config.getString("gui.title.owner", "&6\u516c\u4f1a\u4f1a\u957f: &e{name}").replace("{name}", string));
+        return ChatColor.translateAlternateColorCodes((char)'&', (String)this.config.getString("gui.title.owner", "&6\u516c\u4f1a\u4f1a\u957f: &e%name%").replace("%name%", string));
     }
 
     public int getMainSize() {
@@ -235,7 +235,7 @@ public class GUIConfig {
     }
 
     public String getBankTitle(String string) {
-        return ChatColor.translateAlternateColorCodes((char)'&', (String)this.config.getString("gui.title.bank", "&6\u516c\u4f1a\u94f6\u884c: &e{name}").replace("{name}", string));
+        return ChatColor.translateAlternateColorCodes((char)'&', (String)this.config.getString("gui.title.bank", "&6\u516c\u4f1a\u94f6\u884c: &e%name%").replace("%name%", string));
     }
 
     public String getBankBalanceName() {
@@ -243,7 +243,7 @@ public class GUIConfig {
     }
 
     public String getBankBalanceLore(long l) {
-        return ChatColor.translateAlternateColorCodes((char)'&', (String)this.config.getString("gui.items.bank.balance.lore", "&f\u4f59\u989d: &a{balance}").replace("{balance}", String.valueOf(l)));
+        return ChatColor.translateAlternateColorCodes((char)'&', (String)this.config.getString("gui.items.bank.balance.lore", "&f\u4f59\u989d: &a%balance%").replace("%balance%", String.valueOf(l)));
     }
 
     public String getBankDepositName() {

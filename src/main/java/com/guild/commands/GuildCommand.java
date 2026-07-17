@@ -268,7 +268,7 @@ public class GuildCommand implements CommandExecutor {
             if (onlineMember != null && onlineMember.isOnline()) {
                 onlineMember.sendMessage(plugin.getMessage("guild.join-request")
                         .replace("%player%", player.getDisplayName())
-                        .replace("%guild%", name));
+                        .replace("%name%", name));
             }
         }
     }

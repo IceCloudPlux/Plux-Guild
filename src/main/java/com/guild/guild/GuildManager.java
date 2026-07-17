@@ -380,12 +380,22 @@ public class GuildManager {
      * 获取所有公会的只读视图
      * <p>
      * 优化：返回不可修改视图，避免每次调用都创建新的 HashMap 拷贝。
-     * 原方案 new HashMap<>(guilds) 在高频调用场景下产生大量短命对象，增加 GC 压力。
-     *
+     * 原方案 new HashMap<>(guilds) 在高频调用场景下产生大量短命对象，增加 GC 压力。/**
+     * 获取所有公会的只读视图
      * @return 公会映射的不可修改视图
      */
     public Map<String, Guild> getGuilds() {
         return Collections.unmodifiableMap(guilds);
+    }
+
+    /**
+     * 添加公会（用于数据库加载）
+     */
+    public void addGuild(Guild guild) {
+        guilds.put(guild.getName().toLowerCase(), guild);
+        for (UUID memberUuid : guild.getMembers().keySet()) {
+            playerGuilds.put(memberUuid, guild.getName().toLowerCase());
+        }
     }
 
     /**

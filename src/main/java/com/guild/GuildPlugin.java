@@ -201,8 +201,14 @@ public class GuildPlugin extends JavaPlugin {
     private void registerPlaceholderAPI() {
         try {
             Class.forName("me.clip.placeholderapi.PlaceholderAPI");
-            new GuildPlaceholderExpansion(this).register();
-            getLogger().info("PlaceholderAPI integration enabled");
+            Bukkit.getScheduler().runTaskLater(this, () -> {
+                boolean success = new GuildPlaceholderExpansion(this).register();
+                if (success) {
+                    getLogger().info("PlaceholderAPI integration enabled");
+                } else {
+                    getLogger().warning("PlaceholderAPI integration failed to register");
+                }
+            }, 1);
         } catch (ClassNotFoundException e) {
             getLogger().info("PlaceholderAPI not found, placeholder integration disabled");
         }

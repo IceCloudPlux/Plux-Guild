@@ -111,9 +111,11 @@ public class ChatInputListener implements Listener {
             return;
         }
         
-        if (input.length() < 1 || input.length() > 6) {
-            player.sendMessage(plugin.getMessage("guild.tag-length-invalid"));
-            player.sendMessage(ChatColor.GOLD + "请重新输入公会标签（1-6字符）");
+        int maxTagLen = plugin.getConfig().getInt("guild.max-tag-length", 6);
+        if (input.length() < 1 || input.length() > maxTagLen) {
+            player.sendMessage(plugin.getMessage("guild.tag-length-invalid")
+                    .replace("%max%", String.valueOf(maxTagLen)));
+            player.sendMessage(ChatColor.GOLD + "请重新输入公会标签（1-" + maxTagLen + "字符）");
             registerPendingAction(player.getUniqueId(), "guild_tag_for_create", guildName);
             return;
         }
@@ -134,8 +136,10 @@ public class ChatInputListener implements Listener {
     }
 
     private void handleGuildTagSetting(Player player, String input, Object context) {
-        if (input.length() < 1 || input.length() > 6) {
-            player.sendMessage(plugin.getMessage("guild.tag-length-invalid"));
+        int maxTagLen = plugin.getConfig().getInt("guild.max-tag-length", 6);
+        if (input.length() < 1 || input.length() > maxTagLen) {
+            player.sendMessage(plugin.getMessage("guild.tag-length-invalid")
+                    .replace("%max%", String.valueOf(maxTagLen)));
             return;
         }
         Guild guild = plugin.getGuildManager().getPlayerGuild(player.getUniqueId());

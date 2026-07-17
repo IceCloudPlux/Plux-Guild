@@ -25,7 +25,6 @@ import org.bukkit.inventory.AnvilInventory;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.inventory.view.AnvilView;
 
 import java.util.Map;
 import java.util.UUID;
@@ -106,7 +105,7 @@ public class InventoryListener implements Listener {
         // ========== 铁砧GUI输入拦截（优先于公会GUI）==========
         if (handleAnvilInput(event, player)) return;
 
-        Inventory topInv = event.getView().getTopInventory();
+        Inventory topInv = event.getInventory();
         if (!isGuildInventory(topInv)) return;
 
         event.setCancelled(true);
@@ -152,7 +151,7 @@ public class InventoryListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onInventoryDrag(InventoryDragEvent event) {
         if (!(event.getWhoClicked() instanceof Player)) return;
-        if (!isGuildInventory(event.getView().getTopInventory())) return;
+        if (!isGuildInventory(event.getInventory())) return;
         event.setCancelled(true);
         ((Player) event.getWhoClicked()).updateInventory();
     }
@@ -160,7 +159,7 @@ public class InventoryListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onInventoryInteract(InventoryInteractEvent event) {
         if (!(event.getWhoClicked() instanceof Player)) return;
-        if (!isGuildInventory(event.getView().getTopInventory())) return;
+        if (!isGuildInventory(event.getInventory())) return;
         event.setCancelled(true);
         ((Player) event.getWhoClicked()).updateInventory();
     }
@@ -191,23 +190,26 @@ public class InventoryListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPrepareAnvil(PrepareAnvilEvent event) {
-        if (!(event.getView().getPlayer() instanceof Player)) return;
-        Player player = (Player) event.getView().getPlayer();
+        Player player = null;
+        try {
+            Object view = event.getView();
+            if (view != null) {
+                player = (Player) view.getClass().getMethod("getPlayer").invoke(view);
+            }
+        } catch (Exception ignored) {}
+        
+        if (player == null) return;
+        
         UUID uuid = player.getUniqueId();
         if (uuid == null || !PENDING_GUILD_NAME.containsKey(uuid)) return;
 
         String text = null;
         
-        if (event.getView() instanceof AnvilView) {
-            AnvilView anvilView = (AnvilView) event.getView();
-            text = anvilView.getRenameText();
-        }
-
-        if ((text == null || text.isEmpty()) && event.getInventory() instanceof AnvilInventory) {
+        if (event.getInventory() instanceof AnvilInventory) {
             AnvilInventory anvilInv = (AnvilInventory) event.getInventory();
             try {
                 text = anvilInv.getRenameText();
-            } catch (NoSuchMethodError ignored) {}
+            } catch (NoSuchMethodError | Exception ignored) {}
         }
 
         if (text == null || text.isEmpty()) {
@@ -463,7 +465,7 @@ public class InventoryListener implements Listener {
     // ==================== 铁砧GUI输入（公会创建流程）====================
 
     private boolean handleAnvilInput(InventoryClickEvent event, Player player) {
-        Inventory topInv = event.getView().getTopInventory();
+        Inventory topInv = event.getInventory();
         if (topInv == null || topInv.getType() != InventoryType.ANVIL) return false;
 
         UUID uuid = player.getUniqueId();

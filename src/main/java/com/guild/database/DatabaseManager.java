@@ -104,9 +104,6 @@ public class DatabaseManager {
 
     public void loadGuilds() {
         try (Connection conn = getConnection()) {
-            Map<String, Guild> guilds = plugin.getGuildManager().getGuilds();
-            Map<UUID, String> playerGuilds = plugin.getGuildManager().getPlayerGuilds();
-
             try (PreparedStatement ps = conn.prepareStatement("SELECT * FROM guilds");
                  ResultSet rs = ps.executeQuery()) {
 
@@ -136,14 +133,7 @@ public class DatabaseManager {
                     loadGuildPermissions(conn, guild);
                     loadGuildBank(conn, guild);
 
-                    guilds.put(name.toLowerCase(), guild);
-                }
-            }
-
-            // Rebuild player-guild mapping
-            for (Guild guild : guilds.values()) {
-                for (UUID memberUuid : guild.getMembers().keySet()) {
-                    playerGuilds.put(memberUuid, guild.getName().toLowerCase());
+                    plugin.getGuildManager().addGuild(guild);
                 }
             }
         } catch (SQLException e) {
