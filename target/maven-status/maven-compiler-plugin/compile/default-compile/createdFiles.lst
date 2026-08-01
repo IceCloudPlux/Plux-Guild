@@ -40,6 +40,7 @@ com\guild\guild\GuildManager$GuildRequest.class
 com\guild\config\CurrencyConfig.class
 com\guild\gui\SimpleGuildGUIHolder.class
 com\guild\gui\GuildManageGUI.class
+com\guild\guild\GuildManager$1.class
 com\guild\gui\GuiBuilder.class
 com\guild\gui\GuildShopGUI$ShopItem.class
 com\guild\listeners\ChatInputListener.class
