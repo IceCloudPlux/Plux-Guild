@@ -1,5 +1,5 @@
 name: Guild
-version: 3.0.4
+version: 3.0.5
 main: com.guild.GuildPlugin
 author: ya_xzer21145
 description: 功能全面的公会管理插件，原生兼容 1.8 ~ 26.1+，支持 Spigot/Paper/Purpur/Folia
@@ -67,7 +67,7 @@ permissions:
   # ========== 细粒度单项权限 ==========
   guild.create:
     description: 创建公会
-    default: true
+    default: op
   guild.invite:
     description: 邀请玩家加入公会
     default: op

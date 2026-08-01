@@ -1,67 +1,73 @@
 package com.guild.guild;
-
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
-public class GuildBank {
-    private long balance = 0L;
-    private Map<String, Map<Long, Long>> depositHistory = new HashMap<String, Map<Long, Long>>();
-    private Map<String, Map<Long, Long>> withdrawHistory = new HashMap<String, Map<Long, Long>>();
+public class GuildBank
+{
+    private final AtomicLong balance = new AtomicLong(0L);
+    private final Map<String, Map<Long, Long>> depositHistory = new ConcurrentHashMap<>();
+    private final Map<String, Map<Long, Long>> withdrawHistory = new ConcurrentHashMap<>();
 
-    public long getBalance() {
-        return this.balance;
+    public long getBalance()
+    {
+        return balance.get();
     }
 
-    public void setBalance(long l) {
-        this.balance = l;
+    public void setBalance(long amount)
+    {
+        balance.set(amount);
     }
 
-    public boolean deposit(long l) {
-        if (l <= 0L) {
-            return false;
-        }
-        this.balance += l;
+    public boolean deposit(long amount)
+    {
+        if (amount <= 0L) return false;
+        balance.addAndGet(amount);
         return true;
     }
 
-    public boolean withdraw(long l) {
-        if (l <= 0L) {
-            return false;
+    public boolean withdraw(long amount)
+    {
+        if (amount <= 0L) return false;
+        while (true)
+        {
+            long current = balance.get();
+            if (current < amount) return false;
+            if (balance.compareAndSet(current, current - amount)) return true;
         }
-        if (this.balance < l) {
-            return false;
-        }
-        this.balance -= l;
-        return true;
     }
 
-    public void addDepositRecord(String string2, long l) {
-        this.depositHistory.computeIfAbsent(string2, string -> new HashMap()).put(System.currentTimeMillis(), l);
+    public void addDepositRecord(String playerName, long amount)
+    {
+        depositHistory.computeIfAbsent(playerName, k -> new ConcurrentHashMap<>())
+            .put(System.currentTimeMillis(), amount);
     }
 
-    public void addWithdrawRecord(String string2, long l) {
-        this.withdrawHistory.computeIfAbsent(string2, string -> new HashMap()).put(System.currentTimeMillis(), l);
+    public void addWithdrawRecord(String playerName, long amount)
+    {
+        withdrawHistory.computeIfAbsent(playerName, k -> new ConcurrentHashMap<>())
+            .put(System.currentTimeMillis(), amount);
     }
 
-    public Map<String, Map<Long, Long>> getDepositHistory() {
-        HashMap<String, Map<Long, Long>> hashMap = new HashMap<String, Map<Long, Long>>();
-        this.depositHistory.forEach((string, map2) -> {
-            Map cfr_ignored_0 = hashMap.put((String)string, new HashMap(map2));
-        });
-        return hashMap;
+    public Map<String, Map<Long, Long>> getDepositHistory()
+    {
+        Map<String, Map<Long, Long>> result = new ConcurrentHashMap<>();
+        depositHistory.forEach((name, records) ->
+            result.put(name, new ConcurrentHashMap<>(records)));
+        return result;
     }
 
-    public Map<String, Map<Long, Long>> getWithdrawHistory() {
-        HashMap<String, Map<Long, Long>> hashMap = new HashMap<String, Map<Long, Long>>();
-        this.withdrawHistory.forEach((string, map2) -> {
-            Map cfr_ignored_0 = hashMap.put((String)string, new HashMap(map2));
-        });
-        return hashMap;
+    public Map<String, Map<Long, Long>> getWithdrawHistory()
+    {
+        Map<String, Map<Long, Long>> result = new ConcurrentHashMap<>();
+        withdrawHistory.forEach((name, records) ->
+            result.put(name, new ConcurrentHashMap<>(records)));
+        return result;
     }
 
-    public void clearHistory() {
-        this.depositHistory.clear();
-        this.withdrawHistory.clear();
+    public void clearHistory()
+    {
+        depositHistory.clear();
+        withdrawHistory.clear();
     }
 }
-

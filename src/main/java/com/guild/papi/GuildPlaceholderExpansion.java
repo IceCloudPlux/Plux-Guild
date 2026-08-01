@@ -1,95 +1,134 @@
 package com.guild.papi;
-
 import com.guild.GuildPlugin;
-import java.lang.reflect.Method;
 
-public class GuildPlaceholderExpansion {
+public class GuildPlaceholderExpansion
+{
     private final GuildPlugin plugin;
 
-    public GuildPlaceholderExpansion(GuildPlugin guildPlugin) {
+    public GuildPlaceholderExpansion(GuildPlugin guildPlugin)
+    {
         this.plugin = guildPlugin;
     }
 
-    public boolean register() {
-        try {
+    public boolean register()
+    {
+        try
+        {
             plugin.getLogger().info("Attempting to register PAPI expansion...");
-            
-            try {
+            try
+            {
                 Class.forName("me.clip.placeholderapi.expansion.PlaceholderExpansion");
-                plugin.getLogger().info("Found PAPI v2");
+                plugin.getLogger().info("Found PAPI v2 (PlaceholderExpansion class)");
                 return registerV2();
-            } catch (ClassNotFoundException e1) {
-                plugin.getLogger().info("PAPI v2 not found, trying v1...");
-                try {
+            }
+            catch (ClassNotFoundException e1)
+            {
+                try
+                {
                     Class.forName("me.clip.placeholderapi.external.EZPlaceholderHook");
-                    plugin.getLogger().info("Found PAPI v1");
+                    plugin.getLogger().info("Found PAPI v1 (EZPlaceholderHook class)");
                     return registerV1();
-                } catch (ClassNotFoundException e2) {
-                    plugin.getLogger().info("PlaceholderAPI not found");
+                }
+                catch (ClassNotFoundException e2)
+                {
+                    plugin.getLogger().info("PlaceholderAPI not found, placeholder integration disabled");
                     return false;
                 }
             }
-        } catch (Exception e) {
+        }
+        catch (Throwable e)
+        {
             plugin.getLogger().severe("PAPI registration failed: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
     }
 
-    private boolean registerV2() {
-        try {
+    private boolean registerV2()
+    {
+        try
+        {
             GuildPAPIExpansion expansion = new GuildPAPIExpansion(plugin);
             boolean result = expansion.register();
-            if (result) {
-                plugin.getLogger().info("PAPI v2 expansion registered successfully");
+            if (result)
+            {
+                plugin.getLogger().info("PAPI v2 expansion registered (identifier: " + expansion.getIdentifier() + ", version: " + expansion.getVersion() + ")");
                 return true;
-            } else {
-                plugin.getLogger().warning("PAPI v2 register() returned false");
-                return false;
             }
-        } catch (Exception e) {
-            plugin.getLogger().severe("PAPI v2 registration failed: " + e.getMessage());
+            else
+            {
+                plugin.getLogger().warning("PAPI v2 register() returned false, trying alternative...");
+                return registerV2Alternative();
+            }
+        }
+        catch (NoClassDefFoundError e)
+        {
+            plugin.getLogger().severe("PAPI v2 class def error: " + e.getMessage());
+            return false;
+        }
+        catch (Throwable e)
+        {
+            plugin.getLogger().severe("PAPI v2 registration error: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
     }
 
-    private boolean registerV1() {
-        try {
+    private boolean registerV2Alternative()
+    {
+        try
+        {
+            Class<?> papiClass = Class.forName("me.clip.placeholderapi.PlaceholderAPI");
+            Class<?> expansionClass = Class.forName("me.clip.placeholderapi.expansion.PlaceholderExpansion");
+            java.lang.reflect.Method registerExpansion = papiClass.getMethod("registerExpansion", expansionClass);
+            GuildPAPIExpansion expansion = new GuildPAPIExpansion(plugin);
+            registerExpansion.invoke(null, expansion);
+            plugin.getLogger().info("PAPI v2 expansion registered via alternative method");
+            return true;
+        }
+        catch (Throwable e)
+        {
+            plugin.getLogger().severe("PAPI v2 alternative registration failed: " + e.getMessage());
+            return false;
+        }
+    }
+
+    private boolean registerV1()
+    {
+        try
+        {
             Class<?> hookClass = Class.forName("me.clip.placeholderapi.external.EZPlaceholderHook");
             Class<?> papiClass = Class.forName("me.clip.placeholderapi.PlaceholderAPI");
-            
-            Method registerMethod = null;
-            try {
-                registerMethod = papiClass.getMethod("registerPlaceholderHook", String.class, hookClass);
-            } catch (NoSuchMethodException e) {
-                try {
-                    registerMethod = papiClass.getMethod("registerPlaceholderHook", org.bukkit.plugin.Plugin.class, String.class, hookClass);
-                } catch (NoSuchMethodException ex) {
+            java.lang.reflect.Constructor<?> ctor = hookClass.getDeclaredConstructor(String.class, String.class);
+            ctor.setAccessible(true);
+            Object hook = ctor.newInstance("guild", "ya_xzer21145");
+            java.lang.reflect.Method onHook = hookClass.getDeclaredMethod("onPlaceholderHook", org.bukkit.entity.Player.class, String.class);
+            onHook.setAccessible(true);
+            try
+            {
+                java.lang.reflect.Method registerMethod = papiClass.getMethod("registerPlaceholderHook", String.class, hookClass);
+                registerMethod.invoke(null, "guild", hook);
+            }
+            catch (NoSuchMethodException e)
+            {
+                try
+                {
+                    java.lang.reflect.Method registerMethod = papiClass.getMethod("registerPlaceholderHook",
+                        org.bukkit.plugin.Plugin.class, String.class, hookClass);
+                    registerMethod.invoke(null, plugin, "guild", hook);
+                }
+                catch (NoSuchMethodException ex)
+                {
                     plugin.getLogger().severe("Could not find PAPI v1 register method");
                     return false;
                 }
             }
-            
-            Object result = null;
-            try {
-                Object hook = hookClass.getConstructor(String.class, String.class).newInstance("guild", "ya_xzer21145");
-                result = registerMethod.invoke(null, "guild", hook);
-            } catch (Exception e) {
-                try {
-                    Object hook = hookClass.getConstructor(String.class, String.class).newInstance("guild", "ya_xzer21145");
-                    result = registerMethod.invoke(null, plugin, "guild", hook);
-                } catch (Exception ex) {
-                    plugin.getLogger().severe("PAPI v1 registration failed: " + ex.getMessage());
-                    return false;
-                }
-            }
-            
-            plugin.getLogger().info("PAPI v1 expansion registered");
+            plugin.getLogger().info("PAPI v1 expansion registered (note: V1 has limited placeholder support)");
             return true;
-        } catch (Exception e) {
+        }
+        catch (Throwable e)
+        {
             plugin.getLogger().severe("PAPI v1 registration failed: " + e.getMessage());
-            e.printStackTrace();
             return false;
         }
     }
