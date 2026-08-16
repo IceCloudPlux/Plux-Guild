@@ -1,0 +1,68 @@
+# ============================================================
+#  Guild 经验获取规则配置
+#  修改后使用 /guild reload 重载
+# ============================================================
+
+# ---------- 经验获取事件 ----------
+# 各事件获得的经验值（0 = 不获取）
+events:
+  monster-kill:   10    # 击杀怪物
+  block-break:     5     # 挖掘方块
+  block-place:     3     # 放置方块
+  player-kill:   50     # 击杀玩家
+  fishing:         8     # 钓鱼
+  breeding:       15     # 繁殖动物
+  trading:        20     # 与村民交易
+  enchanting:     12     # 附魔物品
+  crafting:        5     # 合成物品
+  brewing:         6     # 酿造药水
+  smelting:        4     # 熔炼物品
+  taming:         10     # 驯服动物
+  advancement:    30     # 达成成就
+
+# ---------- 经验限制 ----------
+# 每日经验上限（0 = 无限制）
+daily-exp-limit: 0
+# 每日贡献上限（0 = 无限制）
+daily-contribution-limit: 0
+
+# ---------- 经验加成 ----------
+# 周末经验加成倍率（1.0 = 无加成）
+weekend-multiplier: 1.0
+# 节假日经验加成倍率（1.0 = 无加成）
+holiday-multiplier: 1.0
+
+# ---------- 等级公式 ----------
+# 升级所需经验公式: base * level * (1 + level * growth-rate)
+level-formula:
+  base: 500
+  growth-rate: 0.02
+  # 最高等级所需经验上限（0 = 无限制）
+  max-required: 0
+
+# ---------- 方块经验限制 ----------
+# 以下方块不给予经验（防止刷经验）
+no-exp-blocks:
+  - DIRT
+  - GRASS_BLOCK
+  - STONE
+  - COBBLESTONE
+  - SAND
+  - GRAVEL
+
+# ---------- 实体经验限制 ----------
+# 以下实体击杀不给予经验
+no-exp-mobs:
+  - BAT
+  - SILVERFISH
+  - ENDERMITE
+
+# ---------- 贡献度排行 ----------
+# 贡献度是否累计历史值（false则仅统计本周）
+cumulative-contribution: true
+# 每周贡献排行奖励（给前N名发放公会币）
+weekly-reward:
+  enabled: false
+  top-1: 1000
+  top-2: 500
+  top-3: 200

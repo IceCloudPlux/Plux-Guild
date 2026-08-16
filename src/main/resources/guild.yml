@@ -1,0 +1,61 @@
+# ============================================================
+#  Guild 公会规则配置
+#  修改后使用 /guild reload 重载
+# ============================================================
+
+# ---------- 等级与成员 ----------
+max-level:          100       # 最高等级上限
+members-per-level:  5         # 每级增加的最大成员数
+base-members:       10        # 基础成员数（Lv.1时的成员上限）
+
+# ---------- 名称规则 ----------
+min-name-length:    3         # 公会名称最短长度
+max-name-length:    16        # 公会名称最长长度
+max-tag-length:     4         # 标签最长长度
+default-tag-color: "&f"       # 默认标签颜色
+
+# 名称过滤（正则表达式，匹配的名称将被拒绝）
+# 默认允许: 字母、数字、下划线、中文
+name-regex: "[a-zA-Z0-9_\u4e00-\u9fa5]+"
+
+# 禁止使用的公会名称（不区分大小写）
+banned-names:
+  - "admin"
+  - "staff"
+  - "mod"
+  - "GM"
+  - "系统"
+  - "官方"
+
+# 标签允许的颜色代码（留空则允许全部）
+allowed-tag-colors:
+  - "&f"
+  - "&e"
+  - "&a"
+  - "&b"
+  - "&c"
+  - "&d"
+  - "&6"
+
+# ---------- 创建与解散 ----------
+disband-cooldown:   86400    # 解散冷却（秒），默认24小时
+
+# ---------- 冷却时间 ----------
+invite-cooldown:     300     # 邀请冷却（秒），被拒绝后需等待
+join-cooldown:       600     # 加入冷却（秒），离开后需等待
+promote-cooldown:    60      # 升级成员冷却（秒）
+demote-cooldown:     60      # 降级成员冷却（秒）
+kick-cooldown:       30      # 踢人冷却（秒）
+rename-cooldown:     3600    # 重命名冷却（秒）
+tag-change-cooldown: 3600    # 修改标签冷却（秒）
+
+# ---------- 职位限制 ----------
+max-officers:        3       # 最大 officer 数量
+# 是否允许会长直接降级自己
+allow-self-demote:   false
+
+# ---------- 自动管理 ----------
+# 公会成员连续多少天不上线自动踢出（0 = 禁用）
+auto-kick-inactive-days: 0
+# 公会连续多少天无活跃自动标记为休眠（0 = 禁用）
+auto-dormant-days: 0

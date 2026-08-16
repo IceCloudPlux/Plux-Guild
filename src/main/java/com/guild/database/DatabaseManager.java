@@ -295,11 +295,18 @@ public class DatabaseManager
                                                                     plugin.getLogger().log(Level.WARNING, "Failed to delete guild: " + guildName, e);
                                                                 }}
 
-                                                                public void close()
-                                                                {
-                                                                    if (dataSource != null && !dataSource.isClosed())
-                                                                    {
-                                                                        dataSource.close();
-                                                                    }}
+    public void close()
+    {
+        if (dataSource != null && !dataSource.isClosed())
+        {
+            dataSource.close();
+        }
+    }
+
+    public void reload()
+    {
+        close();
+        initialize();
+    }
 
                                                                 }

@@ -1,123 +1,94 @@
 package com.guild.gui;
 import com.guild.GuildPlugin;
+import com.guild.config.ShopConfig;
 import com.guild.guild.Guild;
-import com.guild.utils.VersionCompat;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+import java.util.ArrayList;
+import java.util.List;
 
 public class GuildShopGUI
 {
-    private static final ShopItem[] SHOP_ITEMS =
-    {
-        new ShopItem(1, VersionCompat.getGoldIngotMaterial(), "&e初级资源包", new String[]
-        {
-            " &7等级要求: 1", "&7价格: 1000 公会币", "&a点击购买"
-        }, " shop:level1:resource_pack"), new ShopItem(5, VersionCompat.getDiamondMaterial(), "&b中级工具包", new String[]
-        {
-            " &7等级要求: 5", "&7价格: 5000 公会币", "&a点击购买"
-        }, " shop:level5:tool_kit"), new ShopItem(10, VersionCompat.getEmeraldMaterial(), "&a高级装备包", new String[]
-        {
-            " &7等级要求: 10", "&7价格: 10000 公会币", "&a点击购买"
-        }, " shop:level10:armor_set"), new ShopItem(20, VersionCompat.getExperienceBottleMaterial(), "&5经验卷轴", new String[]
-        {
-            " &7等级要求: 20", "&7价格: 20000 公会币", "&a点击购买"
-        }, " shop:level20:exp_scroll"), new ShopItem(30, VersionCompat.getGoldenHelmetMaterial(), "&6传说头盔", new String[]
-        {
-            " &7等级要求: 30", "&7价格: 50000 公会币", "&a点击购买"
-        }, " shop:level30:legendary_helmet"), new ShopItem(50, VersionCompat.getCommandBlockMaterial(), "&c公会技能书", new String[]
-        {
-            " &7等级要求: 50", "&7价格: 100000 公会币", "&a点击购买"
-        }, " shop:level50:guild_skill"),
-    };
-
     public static void openShopGUI(GuildPlugin plugin, Player player, Guild guild)
     {
-        int level = guild.getLevel();
-        Inventory inv = Bukkit.createInventory( new SimpleGuildGUIHolder("shop"), 54, GuiBuilder.color("&6&l公会商店 - 等级 " + level));
-        GuiBuilder.drawBorder(inv, 6, GuiBuilder.DECORATION_MATERIAL);
-        int slot = 10;
-        for (ShopItem item : SHOP_ITEMS)
+        ShopConfig shopConfig = plugin.getShopConfig();
+        if (shopConfig == null || !shopConfig.isEnabled())
         {
-            if (slot >= 44) break;
-            if (slot % 9 == 8)
-            {
-                slot += 2;
-            }
-            if (slot >= 44) break;
-            if (level >= item.requiredLevel)
-            {
-                inv.setItem(slot, GuiBuilder.createItem( item.material, item.name, item.lore));
-            }
-            else
-            {
-                inv.setItem(slot, GuiBuilder.createItem( VersionCompat.getGrayStainedGlassPaneMaterial(), GuiBuilder.COLOR_INFO + "[锁定]", GuiBuilder.COLOR_DANGER + "需要等级: " + item.requiredLevel, "", GuiBuilder.COLOR_INFO + "公会达到 Lv." + item.requiredLevel + " 后解锁"));
-            }
-            slot++;
-            if (slot % 9 == 8) slot++;
+            player.sendMessage(ChatColor.RED + "公会商店未启用");
+            return;
         }
-        inv.setItem(49, GuiBuilder.backButton());
+        int level = guild.getLevel();
+        int rows = shopConfig.getRows();
+        String title = ChatColor.translateAlternateColorCodes('&',
+            shopConfig.getTitle().replace("%level%", String.valueOf(level)));
+        Inventory inv = Bukkit.createInventory(new SimpleGuildGUIHolder("shop"), rows * 9, title);
+        GuiBuilder.drawBorder(inv, rows, GuiBuilder.DECORATION_MATERIAL);
+        Material lockedMaterial = GuiBuilder.BORDER_MATERIAL;
+        for (ShopConfig.ShopItemEntry item : shopConfig.getItems())
+        {
+            int slot = item.getSlot();
+            if (slot < 0 || slot >= rows * 9) continue;
+            if (slot % 9 == 0 || slot % 9 == 8) continue;
+            if (level >= item.getRequiredLevel())
+            {
+                inv.setItem(slot, createShopItem(item, level));
+            }
+            else if (shopConfig.isShowLockedItems())
+            {
+                inv.setItem(slot, createLockedItem(shopConfig, item));
+            }
+        }
+        inv.setItem(rows * 9 - 5, GuiBuilder.backButton());
         player.openInventory(inv);
     }
 
-    public static ShopItem findShopItem(String itemName)
+    private static ItemStack createShopItem(ShopConfig.ShopItemEntry item, int guildLevel)
     {
-        String stripped = ChatColor.stripColor(GuiBuilder.color(itemName));
-        for (ShopItem item : SHOP_ITEMS)
+        ItemStack stack = new ItemStack(item.getMaterial());
+        ItemMeta meta = stack.getItemMeta();
+        if (meta != null)
         {
-            if (ChatColor.stripColor(GuiBuilder.color(item.name)).equals(stripped))
+            meta.setDisplayName(ChatColor.translateAlternateColorCodes('&', item.getName()));
+            List<String> lore = new ArrayList<>();
+            if (item.getLore() != null)
             {
-                return item;
-            }}
-
-            return null;
+                for (String line : item.getLore())
+                {
+                    lore.add(ChatColor.translateAlternateColorCodes('&', line));
+                }
+            }
+            meta.setLore(lore);
+            stack.setItemMeta(meta);
         }
+        return stack;
+    }
 
-        public static class ShopItem
+    private static ItemStack createLockedItem(ShopConfig shopConfig, ShopConfig.ShopItemEntry item)
+    {
+        Material lockedMat = item.getMaterial();
+        ItemStack stack = new ItemStack(lockedMat);
+        ItemMeta meta = stack.getItemMeta();
+        if (meta != null)
         {
-            final int requiredLevel;
-
-            final Material material;
-
-            final String name;
-
-            final String[] lore;
-
-            final String actionId;
-            ShopItem(int requiredLevel, Material material, String name, String[] lore, String actionId)
+            meta.setDisplayName(ChatColor.translateAlternateColorCodes('&',
+                shopConfig.getLockedDisplayName().replace("%level%", String.valueOf(item.getRequiredLevel()))));
+            List<String> lore = new ArrayList<>();
+            if (shopConfig.getLockedLore() != null)
             {
-                this.requiredLevel = requiredLevel;
-                this.material = material;
-                this.name = name;
-                this.lore = lore;
-                this.actionId = actionId;
+                for (String line : shopConfig.getLockedLore())
+                {
+                    lore.add(ChatColor.translateAlternateColorCodes('&',
+                        line.replace("%level%", String.valueOf(item.getRequiredLevel()))));
+                }
             }
-
-            public int getRequiredLevel()
-            {
-                return requiredLevel;
-            }
-
-            public Material getMaterial()
-            {
-                return material;
-            }
-
-            public String getName()
-            {
-                return name;
-            }
-
-            public String[] getLore()
-            {
-                return lore;
-            }
-
-            public String getActionId()
-            {
-                return actionId;
-            }}
-
+            meta.setLore(lore);
+            stack.setItemMeta(meta);
         }
+        return stack;
+    }
+}

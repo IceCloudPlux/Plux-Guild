@@ -4,424 +4,417 @@ import com.guild.utils.VersionCompat;
 import java.util.List;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
-import org.bukkit.configuration.file.FileConfiguration;
 
-public class GUIConfig
+public class GUIConfig extends SimpleFileConfig
 {
-    private final GuildPlugin plugin;
-
-    private FileConfiguration config;
-
-    public GUIConfig(GuildPlugin guildPlugin)
+    public GUIConfig(GuildPlugin plugin)
     {
-        this.plugin = guildPlugin;
-        guildPlugin.saveDefaultConfig();
-        this.reloadConfig();
+        super(plugin, "gui.yml");
     }
 
     public void reloadConfig()
     {
-        this.plugin.reloadConfig();
-        this.config = this.plugin.getConfig();
+        reload();
     }
 
     public String getMainTitle()
     {
-        return ChatColor.translateAlternateColorCodes((char)'&', (String) this.config.getString("gui.title.main", "&6\u516c\u4f1a\u7cfb\u7edf"));
+        return ChatColor.translateAlternateColorCodes('&', config.getString("title.main", "&6公会系统"));
     }
 
     public String getNoGuildTitle()
     {
-        return ChatColor.translateAlternateColorCodes((char)'&', (String) this.config.getString("gui.title.no_guild", "&6\u516c\u4f1a\u7cfb\u7edf"));
+        return ChatColor.translateAlternateColorCodes('&', config.getString("title.no_guild", "&6公会系统"));
     }
 
     public String getAllGuildsTitle()
     {
-        return ChatColor.translateAlternateColorCodes((char)'&', (String) this.config.getString("gui.title.all_guilds", "&6\u6240\u6709\u516c\u4f1a"));
+        return ChatColor.translateAlternateColorCodes('&', config.getString("title.all_guilds", "&6所有公会"));
     }
 
-    public String getMemberTitle(String string)
+    public String getMemberTitle(String name)
     {
-        return ChatColor.translateAlternateColorCodes((char)'&', (String) this.config.getString("gui.title.member", "&6\u516c\u4f1a: &e%name%").replace("%name%", string));
+        return ChatColor.translateAlternateColorCodes('&', config.getString("title.member", "&6公会: &e%name%").replace("%name%", name));
     }
 
-    public String getOfficerTitle(String string)
+    public String getOfficerTitle(String name)
     {
-        return ChatColor.translateAlternateColorCodes((char)'&', (String) this.config.getString("gui.title.officer", "&6\u516c\u4f1a\u7ba1\u7406: &e%name%").replace("%name%", string));
+        return ChatColor.translateAlternateColorCodes('&', config.getString("title.officer", "&6公会管理: &e%name%").replace("%name%", name));
     }
 
-    public String getOwnerTitle(String string)
+    public String getOwnerTitle(String name)
     {
-        return ChatColor.translateAlternateColorCodes((char)'&', (String) this.config.getString("gui.title.owner", "&6\u516c\u4f1a\u4f1a\u957f: &e%name%").replace("%name%", string));
+        return ChatColor.translateAlternateColorCodes('&', config.getString("title.owner", "&6公会会长: &e%name%").replace("%name%", name));
     }
 
     public int getMainSize()
     {
-        return this.config.getInt("gui.size.main", 54);
+        return config.getInt("size.main", 54);
     }
 
     public int getAllGuildsSize()
     {
-        return this.config.getInt("gui.size.all_guilds", 54);
+        return config.getInt("size.all_guilds", 54);
     }
 
-    private Material getMaterialSafe(String string, String ... stringArray)
+    private Material getMaterialSafe(String path, String... fallbacks)
     {
-        String string2 = this.config.getString(string);
-        if (string2 != null)
+        String materialName = config.getString(path);
+        if (materialName != null)
         {
             try
             {
-                return Material.valueOf((String)string2);
-            }
-            catch (IllegalArgumentException illegalArgumentException)
-            {
-            }}
-
-            for (String string3 : stringArray)
-            {
-                try
-                {
-                    return Material.valueOf((String)string3);
-                }
-                catch (IllegalArgumentException illegalArgumentException)
-                {
-                }}
-
-                return Material.STONE;
-            }
-
-            public Material getNoGuildBarrierMaterial()
-            {
-                return this.getMaterialSafe("gui.items.no_guild.barrier.material", "BARRIER", "BEDROCK");
-            }
-
-            public String getNoGuildBarrierName()
-            {
-                return ChatColor.translateAlternateColorCodes((char)'&', (String) this.config.getString("gui.items.no_guild.barrier.name", "&c\u4f60\u8fd8\u6ca1\u6709\u516c\u4f1a"));
-            }
-
-            public List<String> getNoGuildBarrierLore()
-            {
-                return this.config.getStringList("gui.items.no_guild.barrier.lore");
-            }
-
-            public Material getCreateMaterial()
-            {
-                return this.getMaterialSafe("gui.items.no_guild.create.material", "DIAMOND", "EMERALD");
-            }
-
-            public String getCreateName()
-            {
-                return ChatColor.translateAlternateColorCodes((char)'&', (String) this.config.getString("gui.items.no_guild.create.name", "&a\u521b\u5efa\u516c\u4f1a"));
-            }
-
-            public List<String> getCreateLore()
-            {
-                return this.config.getStringList("gui.items.no_guild.create.lore");
-            }
-
-            public Material getViewAllMaterial()
-            {
-                return this.getMaterialSafe("gui.items.no_guild.view_all.material", "BOOK", "PAPER");
-            }
-
-            public String getViewAllName()
-            {
-                return ChatColor.translateAlternateColorCodes((char)'&', (String) this.config.getString("gui.items.no_guild.view_all.name", "&e\u67e5\u770b\u6240\u6709\u516c\u4f1a"));
-            }
-
-            public List<String> getViewAllLore()
-            {
-                return this.config.getStringList("gui.items.no_guild.view_all.lore");
-            }
-
-            public Material getGuildItemMaterial()
-            {
-                return this.getMaterialSafe("gui.items.all_guilds.guild_item.material", "DIAMOND_BLOCK", "EMERALD_BLOCK");
-            }
-
-            public List<String> getGuildItemLore()
-            {
-                return this.config.getStringList("gui.items.all_guilds.guild_item.lore");
-            }
-
-            public Material getBackMaterial()
-            {
-                return this.getMaterialSafe("gui.items.all_guilds.back.material", "ARROW", "STICK");
-            }
-
-            public String getBackName()
-            {
-                return ChatColor.translateAlternateColorCodes((char)'&', (String) this.config.getString("gui.items.all_guilds.back.name", "&c\u8fd4\u56de"));
-            }
-
-            public List<String> getBackLore()
-            {
-                return this.config.getStringList("gui.items.all_guilds.back.lore");
-            }
-
-            public Material getInfoMaterial()
-            {
-                return this.getMaterialSafe("gui.items.member.info.material", "PAPER", "BOOK");
-            }
-
-            public String getInfoName()
-            {
-                return ChatColor.translateAlternateColorCodes((char)'&', (String) this.config.getString("gui.items.member.info.name", "&e\u516c\u4f1a\u4fe1\u606f"));
-            }
-
-            public List<String> getInfoLore()
-            {
-                return this.config.getStringList("gui.items.member.info.lore");
-            }
-
-            public Material getMembersMaterial()
-            {
-                return VersionCompat.getPlayerHeadMaterial();
-            }
-
-            public String getMembersName()
-            {
-                return ChatColor.translateAlternateColorCodes((char)'&', (String) this.config.getString("gui.items.member.members.name", "&e\u516c\u4f1a\u6210\u5458"));
-            }
-
-            public List<String> getMembersLore()
-            {
-                return this.config.getStringList("gui.items.member.members.lore");
-            }
-
-            public Material getSettingsMaterial()
-            {
-                return this.getMaterialSafe("gui.items.member.settings.material", "REDSTONE", "REDSTONE_BLOCK");
-            }
-
-            public String getSettingsName()
-            {
-                return ChatColor.translateAlternateColorCodes((char)'&', (String) this.config.getString("gui.items.member.settings.name", "&e\u4e2a\u4eba\u8bbe\u7f6e"));
-            }
-
-            public List<String> getSettingsLore()
-            {
-                return this.config.getStringList("gui.items.member.settings.lore");
-            }
-
-            public Material getLeaveMaterial()
-            {
-                return this.getMaterialSafe("gui.items.member.leave.material", "BARRIER", "BEDROCK");
-            }
-
-            public String getLeaveName()
-            {
-                return ChatColor.translateAlternateColorCodes((char)'&', (String) this.config.getString("gui.items.member.leave.name", "&c\u79bb\u5f00\u516c\u4f1a"));
-            }
-
-            public List<String> getLeaveLore()
-            {
-                return this.config.getStringList("gui.items.member.leave.lore");
-            }
-
-            public Material getInviteToggleMaterial()
-            {
-                return this.getMaterialSafe("gui.items.member.invite_toggle.material", "LEVER", "STICK");
-            }
-
-            public String getInviteToggleName()
-            {
-                return ChatColor.translateAlternateColorCodes((char)'&', (String) this.config.getString("gui.items.member.invite_toggle.name", "&e\u516c\u4f1a\u9080\u8bf7"));
-            }
-
-            public List<String> getInviteToggleLore()
-            {
-                return this.config.getStringList("gui.items.member.invite_toggle.lore");
-            }
-
-            public Material getNotifyToggleMaterial()
-            {
-                return this.getMaterialSafe("gui.items.member.notify_toggle.material", "NOTE_BLOCK", "JUKEBOX");
-            }
-
-            public String getNotifyToggleName()
-            {
-                return ChatColor.translateAlternateColorCodes((char)'&', (String) this.config.getString("gui.items.member.notify_toggle.name", "&e\u4e0a\u4e0b\u7ebf\u901a\u77e5"));
-            }
-
-            public List<String> getNotifyToggleLore()
-            {
-                return this.config.getStringList("gui.items.member.notify_toggle.lore");
-            }
-
-            public Material getManageMaterial()
-            {
-                return this.getMaterialSafe("gui.items.officer.manage.material", "COMMAND_BLOCK", "COMMAND", "BEDROCK");
-            }
-
-            public String getManageName()
-            {
-                return ChatColor.translateAlternateColorCodes((char)'&', (String) this.config.getString("gui.items.officer.manage.name", "&c\u7ba1\u7406\u516c\u4f1a"));
-            }
-
-            public List<String> getManageLore()
-            {
-                return this.config.getStringList("gui.items.officer.manage.lore");
-            }
-
-            public String getOwnerColor()
-            {
-                return ChatColor.translateAlternateColorCodes((char)'&', (String) this.config.getString("gui.colors.owner", "&c"));
-            }
-
-            public String getOfficerColor()
-            {
-                return ChatColor.translateAlternateColorCodes((char)'&', (String) this.config.getString("gui.colors.officer", "&6"));
-            }
-
-            public String getMemberColor()
-            {
-                return ChatColor.translateAlternateColorCodes((char)'&', (String) this.config.getString("gui.colors.member", "&a"));
-            }
-
-            public String getOnlineColor()
-            {
-                return ChatColor.translateAlternateColorCodes((char)'&', (String) this.config.getString("gui.colors.online", "&a"));
-            }
-
-            public String getOfflineColor()
-            {
-                return ChatColor.translateAlternateColorCodes((char)'&', (String) this.config.getString("gui.colors.offline", "&c"));
-            }
-
-            public String getBankTitle(String string)
-            {
-                return ChatColor.translateAlternateColorCodes((char)'&', (String) this.config.getString("gui.title.bank", "&6\u516c\u4f1a\u94f6\u884c: &e%name%").replace("%name%", string));
-            }
-
-            public String getBankBalanceName()
-            {
-                return ChatColor.translateAlternateColorCodes((char)'&', (String) this.config.getString("gui.items.bank.balance.name", "&e\u5f53\u524d\u4f59\u989d"));
-            }
-
-            public String getBankBalanceLore(long l)
-            {
-                return ChatColor.translateAlternateColorCodes((char)'&', (String) this.config.getString("gui.items.bank.balance.lore", "&f\u4f59\u989d: &a%balance%").replace("%balance%", String.valueOf(l)));
-            }
-
-            public String getBankDepositName()
-            {
-                return ChatColor.translateAlternateColorCodes((char)'&', (String) this.config.getString("gui.items.bank.deposit.name", "&a\u5b58\u5165\u8d44\u91d1"));
-            }
-
-            public String getBankDepositLore()
-            {
-                return ChatColor.translateAlternateColorCodes((char)'&', (String) this.config.getString("gui.items.bank.deposit.lore", "&f\u70b9\u51fb\u5b58\u5165\u8d44\u91d1\u5230\u516c\u4f1a\u94f6\u884c"));
-            }
-
-            public String getBankWithdrawName()
-            {
-                return ChatColor.translateAlternateColorCodes((char)'&', (String) this.config.getString("gui.items.bank.withdraw.name", "&c\u53d6\u51fa\u8d44\u91d1"));
-            }
-
-            public String getBankWithdrawLore()
-            {
-                return ChatColor.translateAlternateColorCodes((char)'&', (String) this.config.getString("gui.items.bank.withdraw.lore", "&f\u70b9\u51fb\u4ece\u516c\u4f1a\u94f6\u884c\u53d6\u51fa\u8d44\u91d1"));
-            }
-
-            public String getBankName()
-            {
-                return ChatColor.translateAlternateColorCodes((char)'&', (String) this.config.getString("gui.items.member.bank.name", "&e\u516c\u4f1a\u94f6\u884c"));
-            }
-
-            public List<String> getBankLore()
-            {
-                return this.config.getStringList("gui.items.member.bank.lore");
-            }
-
-            public int getNoGuildBarrierSlot()
-            {
-                return this.config.getInt("gui.items.no_guild.barrier.slot", 22);
-            }
-
-            public int getCreateSlot()
-            {
-                return this.config.getInt("gui.items.no_guild.create.slot", 11);
-            }
-
-            public int getViewAllSlot()
-            {
-                return this.config.getInt("gui.items.no_guild.view_all.slot", 15);
-            }
-
-            public int getBackSlot()
-            {
-                return this.config.getInt("gui.items.all_guilds.back.slot", 49);
-            }
-
-            public int getInfoSlot()
-            {
-                return this.config.getInt("gui.items.member.info.slot", 10);
-            }
-
-            public int getMembersSlot()
-            {
-                return this.config.getInt("gui.items.member.members.slot", 13);
-            }
-
-            public int getSettingsSlot()
-            {
-                return this.config.getInt("gui.items.member.settings.slot", 16);
-            }
-
-            public int getLeaveSlot()
-            {
-                return this.config.getInt("gui.items.member.leave.slot", 31);
-            }
-
-            public int getInviteToggleSlot()
-            {
-                return this.config.getInt("gui.items.member.invite_toggle.slot", 28);
-            }
-
-            public int getNotifyToggleSlot()
-            {
-                return this.config.getInt("gui.items.member.notify_toggle.slot", 34);
-            }
-
-            public int getManageSlot()
-            {
-                return this.config.getInt("gui.items.officer.manage.slot", 37);
-            }
-
-            public int getUpgradeSlot()
-            {
-                return this.config.getInt("gui.items.owner.upgrade.slot", 19);
-            }
-
-            public int getBuyExpSlot()
-            {
-                return this.config.getInt("gui.items.owner.buy_exp.slot", 25);
-            }
-
-            public int getBankSlot()
-            {
-                return this.config.getInt("gui.items.member.bank.slot", 22);
-            }
-
-            public int getBankBalanceSlot()
-            {
-                return this.config.getInt("gui.items.bank.balance.slot", 13);
-            }
-
-            public int getBankDepositSlot()
-            {
-                return this.config.getInt("gui.items.bank.deposit.slot", 20);
-            }
-
-            public int getBankWithdrawSlot()
-            {
-                return this.config.getInt("gui.items.bank.withdraw.slot", 24);
-            }
-
-            public int getBankBackSlot()
-            {
-                return this.config.getInt("gui.items.bank.back.slot", 40);
-            }}
+                return Material.valueOf(materialName);
+            }
+            catch (IllegalArgumentException ignored)
+            {
+            }
+        }
+        for (String fallback : fallbacks)
+        {
+            try
+            {
+                return Material.valueOf(fallback);
+            }
+            catch (IllegalArgumentException ignored)
+            {
+            }
+        }
+        return Material.STONE;
+    }
+
+    public Material getNoGuildBarrierMaterial()
+    {
+        return getMaterialSafe("items.no_guild.barrier.material", "BARRIER", "BEDROCK");
+    }
+
+    public String getNoGuildBarrierName()
+    {
+        return ChatColor.translateAlternateColorCodes('&', config.getString("items.no_guild.barrier.name", "&c你还没有公会"));
+    }
+
+    public List<String> getNoGuildBarrierLore()
+    {
+        return config.getStringList("items.no_guild.barrier.lore");
+    }
+
+    public Material getCreateMaterial()
+    {
+        return getMaterialSafe("items.no_guild.create.material", "DIAMOND", "EMERALD");
+    }
+
+    public String getCreateName()
+    {
+        return ChatColor.translateAlternateColorCodes('&', config.getString("items.no_guild.create.name", "&a创建公会"));
+    }
+
+    public List<String> getCreateLore()
+    {
+        return config.getStringList("items.no_guild.create.lore");
+    }
+
+    public Material getViewAllMaterial()
+    {
+        return getMaterialSafe("items.no_guild.view_all.material", "BOOK", "PAPER");
+    }
+
+    public String getViewAllName()
+    {
+        return ChatColor.translateAlternateColorCodes('&', config.getString("items.no_guild.view_all.name", "&e查看所有公会"));
+    }
+
+    public List<String> getViewAllLore()
+    {
+        return config.getStringList("items.no_guild.view_all.lore");
+    }
+
+    public Material getGuildItemMaterial()
+    {
+        return getMaterialSafe("items.all_guilds.guild_item.material", "DIAMOND_BLOCK", "EMERALD_BLOCK");
+    }
+
+    public List<String> getGuildItemLore()
+    {
+        return config.getStringList("items.all_guilds.guild_item.lore");
+    }
+
+    public Material getBackMaterial()
+    {
+        return getMaterialSafe("items.all_guilds.back.material", "ARROW", "STICK");
+    }
+
+    public String getBackName()
+    {
+        return ChatColor.translateAlternateColorCodes('&', config.getString("items.all_guilds.back.name", "&c返回"));
+    }
+
+    public List<String> getBackLore()
+    {
+        return config.getStringList("items.all_guilds.back.lore");
+    }
+
+    public Material getInfoMaterial()
+    {
+        return getMaterialSafe("items.member.info.material", "PAPER", "BOOK");
+    }
+
+    public String getInfoName()
+    {
+        return ChatColor.translateAlternateColorCodes('&', config.getString("items.member.info.name", "&e公会信息"));
+    }
+
+    public List<String> getInfoLore()
+    {
+        return config.getStringList("items.member.info.lore");
+    }
+
+    public Material getMembersMaterial()
+    {
+        return VersionCompat.getPlayerHeadMaterial();
+    }
+
+    public String getMembersName()
+    {
+        return ChatColor.translateAlternateColorCodes('&', config.getString("items.member.members.name", "&e公会成员"));
+    }
+
+    public List<String> getMembersLore()
+    {
+        return config.getStringList("items.member.members.lore");
+    }
+
+    public Material getSettingsMaterial()
+    {
+        return getMaterialSafe("items.member.settings.material", "REDSTONE", "REDSTONE_BLOCK");
+    }
+
+    public String getSettingsName()
+    {
+        return ChatColor.translateAlternateColorCodes('&', config.getString("items.member.settings.name", "&e个人设置"));
+    }
+
+    public List<String> getSettingsLore()
+    {
+        return config.getStringList("items.member.settings.lore");
+    }
+
+    public Material getLeaveMaterial()
+    {
+        return getMaterialSafe("items.member.leave.material", "BARRIER", "BEDROCK");
+    }
+
+    public String getLeaveName()
+    {
+        return ChatColor.translateAlternateColorCodes('&', config.getString("items.member.leave.name", "&c离开公会"));
+    }
+
+    public List<String> getLeaveLore()
+    {
+        return config.getStringList("items.member.leave.lore");
+    }
+
+    public Material getInviteToggleMaterial()
+    {
+        return getMaterialSafe("items.member.invite_toggle.material", "LEVER", "STICK");
+    }
+
+    public String getInviteToggleName()
+    {
+        return ChatColor.translateAlternateColorCodes('&', config.getString("items.member.invite_toggle.name", "&e公会邀请"));
+    }
+
+    public List<String> getInviteToggleLore()
+    {
+        return config.getStringList("items.member.invite_toggle.lore");
+    }
+
+    public Material getNotifyToggleMaterial()
+    {
+        return getMaterialSafe("items.member.notify_toggle.material", "NOTE_BLOCK", "JUKEBOX");
+    }
+
+    public String getNotifyToggleName()
+    {
+        return ChatColor.translateAlternateColorCodes('&', config.getString("items.member.notify_toggle.name", "&e上下线通知"));
+    }
+
+    public List<String> getNotifyToggleLore()
+    {
+        return config.getStringList("items.member.notify_toggle.lore");
+    }
+
+    public Material getManageMaterial()
+    {
+        return getMaterialSafe("items.officer.manage.material", "COMMAND_BLOCK", "COMMAND", "BEDROCK");
+    }
+
+    public String getManageName()
+    {
+        return ChatColor.translateAlternateColorCodes('&', config.getString("items.officer.manage.name", "&c管理公会"));
+    }
+
+    public List<String> getManageLore()
+    {
+        return config.getStringList("items.officer.manage.lore");
+    }
+
+    public String getOwnerColor()
+    {
+        return ChatColor.translateAlternateColorCodes('&', config.getString("colors.owner", "&c"));
+    }
+
+    public String getOfficerColor()
+    {
+        return ChatColor.translateAlternateColorCodes('&', config.getString("colors.officer", "&6"));
+    }
+
+    public String getMemberColor()
+    {
+        return ChatColor.translateAlternateColorCodes('&', config.getString("colors.member", "&a"));
+    }
+
+    public String getOnlineColor()
+    {
+        return ChatColor.translateAlternateColorCodes('&', config.getString("colors.online", "&a"));
+    }
+
+    public String getOfflineColor()
+    {
+        return ChatColor.translateAlternateColorCodes('&', config.getString("colors.offline", "&c"));
+    }
+
+    public String getBankTitle(String name)
+    {
+        return ChatColor.translateAlternateColorCodes('&', config.getString("title.bank", "&6公会银行: &e%name%").replace("%name%", name));
+    }
+
+    public String getBankBalanceName()
+    {
+        return ChatColor.translateAlternateColorCodes('&', config.getString("items.bank.balance.name", "&e当前余额"));
+    }
+
+    public String getBankBalanceLore(long balance)
+    {
+        return ChatColor.translateAlternateColorCodes('&', config.getString("items.bank.balance.lore", "&f余额: &a%balance%").replace("%balance%", String.valueOf(balance)));
+    }
+
+    public String getBankDepositName()
+    {
+        return ChatColor.translateAlternateColorCodes('&', config.getString("items.bank.deposit.name", "&a存入资金"));
+    }
+
+    public String getBankDepositLore()
+    {
+        return ChatColor.translateAlternateColorCodes('&', config.getString("items.bank.deposit.lore", "&f点击存入资金到公会银行"));
+    }
+
+    public String getBankWithdrawName()
+    {
+        return ChatColor.translateAlternateColorCodes('&', config.getString("items.bank.withdraw.name", "&c取出资金"));
+    }
+
+    public String getBankWithdrawLore()
+    {
+        return ChatColor.translateAlternateColorCodes('&', config.getString("items.bank.withdraw.lore", "&f点击从公会银行取出资金"));
+    }
+
+    public String getBankName()
+    {
+        return ChatColor.translateAlternateColorCodes('&', config.getString("items.member.bank.name", "&e公会银行"));
+    }
+
+    public List<String> getBankLore()
+    {
+        return config.getStringList("items.member.bank.lore");
+    }
+
+    public int getNoGuildBarrierSlot()
+    {
+        return config.getInt("items.no_guild.barrier.slot", 22);
+    }
+
+    public int getCreateSlot()
+    {
+        return config.getInt("items.no_guild.create.slot", 11);
+    }
+
+    public int getViewAllSlot()
+    {
+        return config.getInt("items.no_guild.view_all.slot", 15);
+    }
+
+    public int getBackSlot()
+    {
+        return config.getInt("items.all_guilds.back.slot", 49);
+    }
+
+    public int getInfoSlot()
+    {
+        return config.getInt("items.member.info.slot", 10);
+    }
+
+    public int getMembersSlot()
+    {
+        return config.getInt("items.member.members.slot", 13);
+    }
+
+    public int getSettingsSlot()
+    {
+        return config.getInt("items.member.settings.slot", 16);
+    }
+
+    public int getLeaveSlot()
+    {
+        return config.getInt("items.member.leave.slot", 31);
+    }
+
+    public int getInviteToggleSlot()
+    {
+        return config.getInt("items.member.invite_toggle.slot", 28);
+    }
+
+    public int getNotifyToggleSlot()
+    {
+        return config.getInt("items.member.notify_toggle.slot", 34);
+    }
+
+    public int getManageSlot()
+    {
+        return config.getInt("items.officer.manage.slot", 37);
+    }
+
+    public int getUpgradeSlot()
+    {
+        return config.getInt("items.owner.upgrade.slot", 19);
+    }
+
+    public int getBuyExpSlot()
+    {
+        return config.getInt("items.owner.buy_exp.slot", 25);
+    }
+
+    public int getBankSlot()
+    {
+        return config.getInt("items.member.bank.slot", 22);
+    }
+
+    public int getBankBalanceSlot()
+    {
+        return config.getInt("items.bank.balance.slot", 13);
+    }
+
+    public int getBankDepositSlot()
+    {
+        return config.getInt("items.bank.deposit.slot", 20);
+    }
+
+    public int getBankWithdrawSlot()
+    {
+        return config.getInt("items.bank.withdraw.slot", 24);
+    }
+
+    public int getBankBackSlot()
+    {
+        return config.getInt("items.bank.back.slot", 40);
+    }
+}

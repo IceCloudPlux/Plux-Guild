@@ -54,7 +54,7 @@ public class PlayerListener implements Listener
                 Player player2 = player.getKiller();
                 if (player2 != null && player2 != player)
                 {
-                    long l = this.plugin.getConfig().getLong("experience.player-kill", 50L);
+                    long l = this.plugin.getExperienceConfig().getPlayerKillExp();
                     this.plugin.getGuildManager().addExperience(player2.getUniqueId(), l);
                 }}
 

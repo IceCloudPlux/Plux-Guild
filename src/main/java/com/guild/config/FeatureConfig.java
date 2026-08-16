@@ -1,56 +1,26 @@
 package com.guild.config;
 import com.guild.GuildPlugin;
 
-public class FeatureConfig
+public class FeatureConfig extends SimpleFileConfig
 {
-    private final GuildPlugin plugin;
-
-    public FeatureConfig(GuildPlugin guildPlugin)
+    public FeatureConfig(GuildPlugin plugin)
     {
-        this.plugin = guildPlugin;
+        super(plugin, "features.yml");
     }
 
-    public boolean isBankEnabled()
-    {
-        return this.plugin.getConfig().getBoolean("features.bank-enabled", true);
-    }
-
-    public boolean isChatEnabled()
-    {
-        return this.plugin.getConfig().getBoolean("features.chat-enabled", true);
-    }
-
-    public boolean isExperienceEnabled()
-    {
-        return this.plugin.getConfig().getBoolean("features.experience-enabled", true);
-    }
-
-    public boolean isLevelEnabled()
-    {
-        return this.plugin.getConfig().getBoolean("features.level-enabled", true);
-    }
-
-    public boolean isMotdEnabled()
-    {
-        return this.plugin.getConfig().getBoolean("features.motd-enabled", true);
-    }
-
-    public boolean isTagEnabled()
-    {
-        return this.plugin.getConfig().getBoolean("features.tag-enabled", true);
-    }
-
-    public boolean isNicknameEnabled()
-    {
-        return this.plugin.getConfig().getBoolean("features.nickname-enabled", true);
-    }
-
-    public boolean isNotificationEnabled()
-    {
-        return this.plugin.getConfig().getBoolean("features.notification-enabled", true);
-    }
-
-    public boolean isGuiEnabled()
-    {
-        return this.plugin.getConfig().getBoolean("features.gui-enabled", true);
-    }}
+    public boolean isBankEnabled() { return config.getBoolean("bank", true); }
+    public boolean isChatEnabled() { return config.getBoolean("chat", true); }
+    public boolean isExperienceEnabled() { return config.getBoolean("experience", true); }
+    public boolean isLevelEnabled() { return config.getBoolean("level", true); }
+    public boolean isMotdEnabled() { return config.getBoolean("motd", true); }
+    public boolean isTagEnabled() { return config.getBoolean("tag", true); }
+    public boolean isNicknameEnabled() { return config.getBoolean("nickname", true); }
+    public boolean isNotificationEnabled() { return config.getBoolean("notification", true); }
+    public boolean isGuiEnabled() { return config.getBoolean("gui", true); }
+    public boolean isShopEnabled() { return config.getBoolean("shop", true); }
+    public boolean isAutoSaveEnabled() { return config.getBoolean("auto-save", true); }
+    public boolean isAutoDisbandEnabled() { return config.getBoolean("auto-disband", false); }
+    public boolean isDailyResetEnabled() { return config.getBoolean("daily-reset", true); }
+    public boolean isCombatTagEnabled() { return config.getBoolean("combat-tag", false); }
+    public boolean isCooldownBarEnabled() { return config.getBoolean("cooldown-bar", true); }
+}

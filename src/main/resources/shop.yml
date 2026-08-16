@@ -1,0 +1,207 @@
+# ============================================================
+#  Guild 公会商店配置文件
+#  修改后使用 /guild reload 重载
+# ============================================================
+
+# ---------- 商店全局设置 ----------
+settings:
+  enabled: true                    # 是否启用公会商店
+  title: "&6&l公会商店"            # 商店标题
+  rows: 6                          # 商店界面行数 (1-6)
+  show-locked-items: true         # 是否显示未达到等级要求的锁定商品
+  locked-display-name: "&7[锁定]"  # 锁定商品的显示名称
+  locked-lore:
+    - "&c需要公会等级: %level%"
+    - "&7公会达到 Lv.%level% 后解锁"
+
+# ---------- 商品列表 ----------
+# 每个商品支持以下字段:
+#   slot:           商品在GUI中的位置 (0-53)
+#   material:       物品材质 (Bukkit Material名称, 如 GOLD_INGOT)
+#   name:           商品显示名称 (支持颜色代码 &)
+#   lore:           商品描述 (列表, 支持颜色代码)
+#   required-level: 购买所需公会等级
+#   price:          购买价格
+#   currency-type:  货币类型 (GUILD_COIN / VAULT / PLAYER_POINTS)
+#   action:         购买后执行的动作类型:
+#                     COMMAND   - 以玩家身份执行命令
+#                     CONSOLE   - 以控制台身份执行命令
+#                     GIVE_ITEM - 直接给予物品
+#                     GUILD_EXP - 给予公会经验
+#                     GUILD_COIN- 给予玩家公会币
+#   action-value:   动作内容
+#                     COMMAND/CONSOLE: 命令内容 (支持 %player% 占位符)
+#                     GIVE_ITEM: 物品格式 material:amount:data (如 DIAMOND:3:0)
+#                     GUILD_EXP: 经验数量
+#                     GUILD_COIN: 公会币数量
+#   buy-message:    购买成功后发送的消息 (支持颜色代码, 留空则不发送)
+#   permission:     购买所需权限 (留空则无限制)
+
+items:
+  # === 基础商品 ===
+  resource_pack:
+    slot: 10
+    material: GOLD_INGOT
+    name: "&e初级资源包"
+    lore:
+      - "&7等级要求: &fLv.1"
+      - "&7价格: &f1000 公会币"
+      - "&a点击购买"
+    required-level: 1
+    price: 1000
+    currency-type: GUILD_COIN
+    action: CONSOLE
+    action-value: "give %player% iron_ingot 16"
+    buy-message: "&a购买成功！获得了 16 个铁锭"
+    permission: ""
+
+  tool_kit:
+    slot: 12
+    material: DIAMOND
+    name: "&b中级工具包"
+    lore:
+      - "&7等级要求: &fLv.5"
+      - "&7价格: &f5000 公会币"
+      - "&a点击购买"
+    required-level: 5
+    price: 5000
+    currency-type: GUILD_COIN
+    action: CONSOLE
+    action-value: "give %player% diamond_pickaxe 1"
+    buy-message: "&a购买成功！获得了 钻石镐"
+    permission: ""
+
+  armor_set:
+    slot: 14
+    material: EMERALD
+    name: "&a高级装备包"
+    lore:
+      - "&7等级要求: &fLv.10"
+      - "&7价格: &f10000 公会币"
+      - "&a点击购买"
+    required-level: 10
+    price: 10000
+    currency-type: GUILD_COIN
+    action: CONSOLE
+    action-value: "give %player% diamond_chestplate 1"
+    buy-message: "&a购买成功！获得了 钻石胸甲"
+    permission: ""
+
+  exp_scroll:
+    slot: 16
+    material: EXPERIENCE_BOTTLE
+    name: "&5经验卷轴"
+    lore:
+      - "&7等级要求: &fLv.20"
+      - "&7价格: &f20000 公会币"
+      - "&7效果: &f给予公会 200 经验"
+      - "&a点击购买"
+    required-level: 20
+    price: 20000
+    currency-type: GUILD_COIN
+    action: GUILD_EXP
+    action-value: "200"
+    buy-message: "&a购买成功！公会获得了 200 经验"
+    permission: ""
+
+  legendary_helmet:
+    slot: 28
+    material: GOLDEN_HELMET
+    name: "&6传说头盔"
+    lore:
+      - "&7等级要求: &fLv.30"
+      - "&7价格: &f50000 公会币"
+      - "&a点击购买"
+    required-level: 30
+    price: 50000
+    currency-type: GUILD_COIN
+    action: CONSOLE
+    action-value: "give %player% golden_helmet 1"
+    buy-message: "&a购买成功！获得了 传说头盔"
+    permission: ""
+
+  guild_skill:
+    slot: 30
+    material: COMMAND_BLOCK
+    name: "&c公会技能书"
+    lore:
+      - "&7等级要求: &fLv.50"
+      - "&7价格: &f100000 公会币"
+      - "&7效果: &f给予公会 1000 经验"
+      - "&a点击购买"
+    required-level: 50
+    price: 100000
+    currency-type: GUILD_COIN
+    action: GUILD_EXP
+    action-value: "1000"
+    buy-message: "&a购买成功！公会获得了 1000 经验"
+    permission: ""
+
+  # === 进阶商品 ===
+  diamond_block:
+    slot: 32
+    material: DIAMOND_BLOCK
+    name: "&b钻石礼包"
+    lore:
+      - "&7等级要求: &fLv.15"
+      - "&7价格: &f15000 公会币"
+      - "&7内容: &f3个钻石块"
+      - "&a点击购买"
+    required-level: 15
+    price: 15000
+    currency-type: GUILD_COIN
+    action: CONSOLE
+    action-value: "give %player% diamond_block 3"
+    buy-message: "&a购买成功！获得了 3 个钻石块"
+    permission: ""
+
+  golden_apple:
+    slot: 34
+    material: GOLDEN_APPLE
+    name: "&6金苹果礼包"
+    lore:
+      - "&7等级要求: &fLv.25"
+      - "&7价格: &f30000 公会币"
+      - "&7内容: &f5个金苹果"
+      - "&a点击购买"
+    required-level: 25
+    price: 30000
+    currency-type: GUILD_COIN
+    action: CONSOLE
+    action-value: "give %player% golden_apple 5"
+    buy-message: "&a购买成功！获得了 5 个金苹果"
+    permission: ""
+
+  netherite_pack:
+    slot: 40
+    material: NETHERITE_INGOT
+    name: "&8下界合金包"
+    lore:
+      - "&7等级要求: &fLv.40"
+      - "&7价格: &f80000 公会币"
+      - "&7内容: &f2个下界合金锭"
+      - "&a点击购买"
+    required-level: 40
+    price: 80000
+    currency-type: GUILD_COIN
+    action: CONSOLE
+    action-value: "give %player% netherite_ingot 2"
+    buy-message: "&a购买成功！获得了 2 个下界合金锭"
+    permission: ""
+
+  exp_boost:
+    slot: 42
+    material: BOOK
+    name: "&d经验加成卷"
+    lore:
+      - "&7等级要求: &fLv.35"
+      - "&7价格: &f60000 公会币"
+      - "&7效果: &f给予公会 500 经验"
+      - "&a点击购买"
+    required-level: 35
+    price: 60000
+    currency-type: GUILD_COIN
+    action: GUILD_EXP
+    action-value: "500"
+    buy-message: "&a购买成功！公会获得了 500 经验"
+    permission: ""

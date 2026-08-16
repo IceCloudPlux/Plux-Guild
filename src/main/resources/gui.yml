@@ -1,0 +1,124 @@
+# ============================================================
+#  Guild GUI 界面配置
+#  修改后使用 /guild reload 重载
+# ============================================================
+
+title:
+  main: "&6公会系统"
+  no_guild: "&6公会系统"
+  all_guilds: "&6所有公会"
+  member: "&6公会: &e%name%"
+  officer: "&6公会管理: &e%name%"
+  owner: "&6公会会长: &e%name%"
+  bank: "&6公会银行: &e%name%"
+
+size:
+  main: 54
+  all_guilds: 54
+
+colors:
+  owner: "&c"
+  officer: "&6"
+  member: "&a"
+  online: "&a"
+  offline: "&c"
+
+items:
+  no_guild:
+    barrier:
+      slot: 22
+      material: BARRIER
+      name: "&c你还没有公会"
+      lore:
+        - "&7加入或创建一个公会来开始你的旅程"
+    create:
+      slot: 11
+      material: DIAMOND
+      name: "&a创建公会"
+      lore:
+        - "&e点击创建新公会"
+    view_all:
+      slot: 15
+      material: BOOK
+      name: "&e查看所有公会"
+      lore:
+        - "&e点击查看所有公会列表"
+
+  all_guilds:
+    guild_item:
+      material: DIAMOND_BLOCK
+      lore:
+        - "&7等级: &f%level%"
+        - "&7会长: &f%owner%"
+        - "&7成员: &f%members%/%max%"
+        - ""
+        - "&e点击查看详情"
+    back:
+      slot: 49
+      material: ARROW
+      name: "&c返回"
+      lore: []
+
+  member:
+    info:
+      slot: 10
+      material: PAPER
+      name: "&e公会信息"
+      lore: []
+    members:
+      slot: 13
+      name: "&e公会成员"
+      lore: []
+    settings:
+      slot: 16
+      material: REDSTONE
+      name: "&e个人设置"
+      lore: []
+    leave:
+      slot: 31
+      material: BARRIER
+      name: "&c离开公会"
+      lore: []
+    invite_toggle:
+      slot: 28
+      material: LEVER
+      name: "&e公会邀请"
+      lore: []
+    notify_toggle:
+      slot: 34
+      material: NOTE_BLOCK
+      name: "&e上下线通知"
+      lore: []
+    bank:
+      slot: 22
+      name: "&e公会银行"
+      lore: []
+
+  officer:
+    manage:
+      slot: 37
+      material: COMMAND_BLOCK
+      name: "&c管理公会"
+      lore: []
+
+  owner:
+    upgrade:
+      slot: 19
+    buy_exp:
+      slot: 25
+
+  bank:
+    balance:
+      slot: 13
+      name: "&e当前余额"
+      lore: "&f余额: &a%balance%"
+    deposit:
+      slot: 20
+      name: "&a存入资金"
+      lore: "&f点击存入资金到公会银行"
+    withdraw:
+      slot: 24
+      name: "&c取出资金"
+      lore: "&f点击从公会银行取出资金"
+    back:
+      slot: 40

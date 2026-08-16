@@ -4,9 +4,13 @@ import com.guild.cache.PlayerNameCache;
 import com.guild.commands.GuildChatCommand;
 import com.guild.commands.GuildCommand;
 import com.guild.commands.GuildGUICommand;
+import com.guild.config.BankConfig;
 import com.guild.config.CurrencyConfig;
+import com.guild.config.ExperienceConfig;
 import com.guild.config.FeatureConfig;
+import com.guild.config.GuildConfig;
 import com.guild.config.GUIConfig;
+import com.guild.config.ShopConfig;
 import com.guild.currency.GuildCurrency;
 import com.guild.database.DatabaseManager;
 import com.guild.guild.GuildManager;
@@ -41,6 +45,14 @@ public class GuildPlugin extends JavaPlugin
 
     private CurrencyConfig currencyConfig;
 
+    private ShopConfig shopConfig;
+
+    private GuildConfig guildConfig;
+
+    private ExperienceConfig experienceConfig;
+
+    private BankConfig bankConfig;
+
     private GuildCurrency guildCurrency;
 
     private final Map<String, String> messages = new HashMap<>();
@@ -51,7 +63,7 @@ public class GuildPlugin extends JavaPlugin
 
     private ChatInputListener chatInputListener;
 
-    private static final double CURRENT_CONFIG_VERSION = 1.1;
+    private static final double CURRENT_CONFIG_VERSION = 1.2;
 
     @Override
     public void onEnable()
@@ -68,6 +80,10 @@ public class GuildPlugin extends JavaPlugin
         guiConfig = new GUIConfig( this);
         featureConfig = new FeatureConfig( this);
         currencyConfig = new CurrencyConfig( this);
+        shopConfig = new ShopConfig( this);
+        guildConfig = new GuildConfig( this);
+        experienceConfig = new ExperienceConfig( this);
+        bankConfig = new BankConfig( this);
         guildCurrency = new GuildCurrency( this);
         registerCommands();
         registerListeners();
@@ -315,6 +331,26 @@ public void onDisable()
                                     return currencyConfig;
                                 }
 
+                                public ShopConfig getShopConfig()
+                                {
+                                    return shopConfig;
+                                }
+
+                                public GuildConfig getGuildConfig()
+                                {
+                                    return guildConfig;
+                                }
+
+                                public ExperienceConfig getExperienceConfig()
+                                {
+                                    return experienceConfig;
+                                }
+
+                                public BankConfig getBankConfig()
+                                {
+                                    return bankConfig;
+                                }
+
                                 public GuildCurrency getGuildCurrency()
                                 {
                                     return guildCurrency;
@@ -353,4 +389,54 @@ public void onDisable()
                                         msg = msg.replace(replacements[i], replacements[i + 1]);
                                     }
                                     return msg;
-                                }}
+                                }
+
+    public void reloadAll()
+    {
+        reloadConfig();
+        getLogger().info("Core config reloaded");
+        loadLanguage();
+        getLogger().info("Language reloaded");
+        if (featureConfig != null)
+        {
+            featureConfig.reload();
+            getLogger().info("Features config reloaded");
+        }
+        if (currencyConfig != null)
+        {
+            currencyConfig.reload();
+            getLogger().info("Currency config reloaded");
+        }
+        if (guildConfig != null)
+        {
+            guildConfig.reload();
+            getLogger().info("Guild config reloaded");
+        }
+        if (experienceConfig != null)
+        {
+            experienceConfig.reload();
+            getLogger().info("Experience config reloaded");
+        }
+        if (bankConfig != null)
+        {
+            bankConfig.reload();
+            getLogger().info("Bank config reloaded");
+        }
+        if (guiConfig != null)
+        {
+            guiConfig.reloadConfig();
+            getLogger().info("GUI config reloaded");
+        }
+        if (shopConfig != null)
+        {
+            shopConfig.reload();
+            getLogger().info("Shop config reloaded");
+        }
+        guildCurrency = new GuildCurrency(this);
+        getLogger().info("Currency system re-initialized");
+        if (playerNameCache != null)
+        {
+            playerNameCache.clearAllCaches();
+            getLogger().info("Player name cache cleared");
+        }
+    }}

@@ -34,6 +34,28 @@ public class GuildCommand implements CommandExecutor
 @Override
 public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args)
     {
+        if (args.length > 0 && "reload".equalsIgnoreCase(args[0]))
+        {
+            if (!sender.hasPermission("guild.admin"))
+            {
+                sender.sendMessage(ChatColor.RED + "你没有权限使用此命令");
+                return true;
+            }
+            String[] subArgs = Arrays.copyOfRange(args, 1, args.length);
+            if (subArgs.length >= 1 && "database".equalsIgnoreCase(subArgs[0]))
+            {
+                plugin.reloadAll();
+                plugin.getDatabaseManager().reload();
+                sender.sendMessage(ChatColor.GREEN + "配置文件及数据库已全部重载");
+            }
+            else
+            {
+                plugin.reloadAll();
+                sender.sendMessage(ChatColor.GREEN + "插件已完整重载（配置、语言、货币系统、GUI设置）");
+                sender.sendMessage(ChatColor.GRAY + "提示: 如修改了数据库连接信息，请使用 /guild reload database");
+            }
+            return true;
+        }
         if (!(sender instanceof Player))
         {
             sender.sendMessage("此命令只能由玩家执行");
@@ -208,8 +230,8 @@ public boolean onCommand(CommandSender sender, Command cmd, String label, String
             return;
         }
         String name = args[1];
-        int minLen = plugin.getConfig().getInt("guild.min-name-length", 3);
-        int maxLen = plugin.getConfig().getInt("guild.max-name-length", 16);
+        int minLen = plugin.getGuildConfig().getMinNameLength();
+        int maxLen = plugin.getGuildConfig().getMaxNameLength();
         if (name.length() < minLen || name.length() > maxLen)
         {
             player.sendMessage(ChatColor.RED + "公会名称长度必须在 " + minLen + " 到 " + maxLen + " 之间");
@@ -219,14 +241,14 @@ public boolean onCommand(CommandSender sender, Command cmd, String label, String
         if (args.length >= 3)
         {
             tag = args[2];
-            int maxTagLen = plugin.getConfig().getInt("guild.max-tag-length", 4);
+            int maxTagLen = plugin.getGuildConfig().getMaxTagLength();
             if (tag.length() > maxTagLen)
             {
                 player.sendMessage(ChatColor.RED + "标签长度不能超过 " + maxTagLen + " 个字符");
                 return;
             }}
 
-            double cost = plugin.getConfig().getDouble("guild.create-cost", 0.0);
+            long cost = plugin.getCurrencyConfig().getCreateCost();
             if (cost > 0 && !chargeCreateCost(player, cost))
             {
                 return;
@@ -1214,14 +1236,15 @@ public boolean onCommand(CommandSender sender, Command cmd, String label, String
                                                                                                     }
                                                                                                     if (subArgs.length >= 1 && "database".equalsIgnoreCase(subArgs[0]))
                                                                                                     {
-                                                                                                        plugin.reloadConfig();
-                                                                                                        plugin.getDatabaseManager().initialize();
-                                                                                                        player.sendMessage(ChatColor.GREEN + "数据库已重载");
+                                                                                                        plugin.reloadAll();
+                                                                                                        plugin.getDatabaseManager().reload();
+                                                                                                        player.sendMessage(ChatColor.GREEN + "配置文件及数据库已全部重载");
                                                                                                     }
                                                                                                     else
                                                                                                     {
-                                                                                                        plugin.reloadConfig();
-                                                                                                        player.sendMessage(ChatColor.GREEN + "配置文件已重载");
+                                                                                                        plugin.reloadAll();
+                                                                                                        player.sendMessage(ChatColor.GREEN + "插件已完整重载（配置、语言、货币系统、GUI设置）");
+                                                                                                        player.sendMessage(ChatColor.GRAY + "提示: 如修改了数据库连接信息，请使用 /guild reload database");
                                                                                                     }}
 
                                                                                                 }

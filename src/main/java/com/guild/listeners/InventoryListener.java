@@ -206,8 +206,8 @@ public class InventoryListener implements Listener
                                     if (name.contains("创建公会"))
                                     {
                                         player.closeInventory();
-                                        int minLen = plugin.getConfig().getInt("guild.min-name-length", 3);
-                                        int maxLen = plugin.getConfig().getInt("guild.max-name-length", 16);
+                                        int minLen = plugin.getGuildConfig().getMinNameLength();
+                                        int maxLen = plugin.getGuildConfig().getMaxNameLength();
                                         player.sendMessage(ChatColor.YELLOW + "========== 创建公会 ==========");
                                         player.sendMessage(ChatColor.GOLD + "请在聊天框输入公会名称（" + minLen + "-" + maxLen + "字符）");
                                         player.sendMessage(ChatColor.GRAY + "输入 'cancel' 取消创建");
@@ -438,37 +438,102 @@ public class InventoryListener implements Listener
                                                             if (name.contains("返回"))
                                                             {
                                                                 GuildGUI.openGUI(plugin, player);
+                                                                return;
                                                             }
-                                                            else if (name.contains("初级资源包"))
+                                                            com.guild.config.ShopConfig shopConfig = plugin.getShopConfig();
+                                                            if (shopConfig == null || !shopConfig.isEnabled())
                                                             {
-                                                                player.closeInventory();
-                                                                player.performCommand("menu shop level1 resource_pack");
+                                                                player.sendMessage(org.bukkit.ChatColor.RED + "公会商店未启用");
+                                                                return;
                                                             }
-                                                            else if (name.contains("中级工具包"))
+                                                            com.guild.config.ShopConfig.ShopItemEntry item = shopConfig.findItemByName(name);
+                                                            if (item == null) return;
+                                                            com.guild.guild.Guild guild = plugin.getGuildManager().getPlayerGuild(player.getUniqueId());
+                                                            if (guild == null)
                                                             {
-                                                                player.closeInventory();
-                                                                player.performCommand("menu shop level5 tool_kit");
+                                                                player.sendMessage(org.bukkit.ChatColor.RED + "你不在公会中");
+                                                                return;
                                                             }
-                                                            else if (name.contains("高级装备包"))
+                                                            if (guild.getLevel() < item.getRequiredLevel())
                                                             {
-                                                                player.closeInventory();
-                                                                player.performCommand("menu shop level10 armor_set");
+                                                                player.sendMessage(org.bukkit.ChatColor.RED + "公会等级不足，需要 Lv." + item.getRequiredLevel());
+                                                                return;
                                                             }
-                                                            else if (name.contains("经验卷轴"))
+                                                            if (!item.getPermission().isEmpty() && !player.hasPermission(item.getPermission()))
                                                             {
-                                                                player.closeInventory();
-                                                                player.performCommand("menu shop level20 exp_scroll");
+                                                                player.sendMessage(org.bukkit.ChatColor.RED + "你没有权限购买此商品");
+                                                                return;
                                                             }
-                                                            else if (name.contains("传说头盔"))
+                                                            if (!plugin.getGuildCurrency().withdraw(player.getUniqueId(), item.getPrice(), item.getCurrencyType()))
                                                             {
-                                                                player.closeInventory();
-                                                                player.performCommand("menu shop level30legendary_helmet");
+                                                                String curName = "";
+                                                                switch (item.getCurrencyType())
+                                                                {
+                                                                    case VAULT: curName = plugin.getCurrencyConfig().getVaultCurrencyName(); break;
+                                                                    case PLAYER_POINTS: curName = plugin.getCurrencyConfig().getPlayerPointsCurrencyName(); break;
+                                                                    case GUILD_COIN: curName = plugin.getCurrencyConfig().getGuildCurrencyName(); break;
+                                                                }
+                                                                player.sendMessage(org.bukkit.ChatColor.RED + "购买失败，你需要 " + item.getPrice() + " " + curName);
+                                                                return;
                                                             }
-                                                            else if (name.contains("公会技能书"))
+                                                            executeShopAction(player, guild, item);
+                                                            if (!item.getBuyMessage().isEmpty())
                                                             {
-                                                                player.closeInventory();
-                                                                player.performCommand("menu shop level50 guild_skill");
-                                                            }}
+                                                                player.sendMessage(org.bukkit.ChatColor.translateAlternateColorCodes('&',
+                                                                    item.getBuyMessage().replace("%player%", player.getName())));
+                                                            }
+                                                        }
+
+                                                        private void executeShopAction(Player player, com.guild.guild.Guild guild, com.guild.config.ShopConfig.ShopItemEntry item)
+                                                        {
+                                                            String value = item.getActionValue().replace("%player%", player.getName());
+                                                            switch (item.getAction())
+                                                            {
+                                                                case COMMAND:
+                                                                    player.performCommand(value);
+                                                                    break;
+                                                                case CONSOLE:
+                                                                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), value);
+                                                                    break;
+                                                                case GIVE_ITEM:
+                                                                    giveShopItem(player, value);
+                                                                    break;
+                                                                case GUILD_EXP:
+                                                                    try
+                                                                    {
+                                                                        long exp = Long.parseLong(value.trim());
+                                                                        guild.addExperience(exp);
+                                                                        plugin.getGuildManager().scheduleSavePublic(guild);
+                                                                    }
+                                                                    catch (NumberFormatException ignored) {}
+                                                                    break;
+                                                                case GUILD_COIN:
+                                                                    try
+                                                                    {
+                                                                        long amount = Long.parseLong(value.trim());
+                                                                        plugin.getGuildManager().depositPlayerGuildCurrency(player.getUniqueId(), amount);
+                                                                    }
+                                                                    catch (NumberFormatException ignored) {}
+                                                                    break;
+                                                            }
+                                                        }
+
+                                                        private void giveShopItem(Player player, String format)
+                                                        {
+                                                            try
+                                                            {
+                                                                String[] parts = format.split(":");
+                                                                org.bukkit.Material mat = org.bukkit.Material.valueOf(parts[0].toUpperCase());
+                                                                int amount = parts.length > 1 ? Integer.parseInt(parts[1]) : 1;
+                                                                org.bukkit.inventory.ItemStack stack = new org.bukkit.inventory.ItemStack(mat, amount);
+                                                                player.getInventory().addItem(stack);
+                                                                player.updateInventory();
+                                                            }
+                                                            catch (Exception e)
+                                                            {
+                                                                plugin.getLogger().warning("Failed to give shop item: " + format + " - " + e.getMessage());
+                                                            }
+                                                        }
 
                                                             private void handleMainGUIClick(Player player, Guild guild, String name)
                                                             {
@@ -748,8 +813,8 @@ public class InventoryListener implements Listener
 
                                                                                             private void processGuildNameInput(Player player, String name)
                                                                                             {
-                                                                                                int minLen = plugin.getConfig().getInt("guild.min-name-length", 3);
-                                                                                                int maxLen = plugin.getConfig().getInt("guild.max-name-length", 16);
+                                                                                                int minLen = plugin.getGuildConfig().getMinNameLength();
+                                                                                                int maxLen = plugin.getGuildConfig().getMaxNameLength();
                                                                                                 if (name.length() < minLen || name.length() > maxLen)
                                                                                                 {
                                                                                                     player.sendMessage(plugin.getMessage("guild.name-length-invalid") .replace("%min%", String.valueOf(minLen)) .replace("%max%", String.valueOf(maxLen)));
@@ -776,14 +841,14 @@ public class InventoryListener implements Listener
 
                                                                                             private void processGuildTagInput(Player player, String guildName, String tag)
                                                                                             {
-                                                                                                int maxTagLen = plugin.getConfig().getInt("guild.max-tag-length", 4);
+                                                                                                int maxTagLen = plugin.getGuildConfig().getMaxTagLength();
                                                                                                 if (tag.length() < 2 || tag.length() > maxTagLen)
                                                                                                 {
                                                                                                     player.sendMessage(plugin.getMessage("guild.tag-length-invalid") .replace("%max%", String.valueOf(maxTagLen)));
                                                                                                     reopenCurrentAnvil(player);
                                                                                                     return;
                                                                                                 }
-                                                                                                double cost = plugin.getConfig().getDouble("guild.create-cost", 0.0);
+                                                                                                long cost = plugin.getCurrencyConfig().getCreateCost();
                                                                                                 GuildCurrency currency = plugin.getGuildCurrency();
                                                                                                 GuildCurrency.CurrencyType currencyType = plugin.getCurrencyConfig().getCurrencyType();
                                                                                                 if (cost > 0 && !currency.withdraw(player.getUniqueId(), (long) cost, currencyType))

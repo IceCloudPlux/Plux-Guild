@@ -78,8 +78,8 @@ public class ChatInputListener implements Listener
                 player.sendMessage(ChatColor.YELLOW + "已取消创建公会");
                 return;
             }
-            int minLen = plugin.getConfig().getInt("guild.min-name-length", 3);
-            int maxLen = plugin.getConfig().getInt("guild.max-name-length", 16);
+            int minLen = plugin.getGuildConfig().getMinNameLength();
+            int maxLen = plugin.getGuildConfig().getMaxNameLength();
             if (input.length() < minLen || input.length() > maxLen)
             {
                 player.sendMessage(plugin.getMessage("guild.name-length-invalid") .replace("%min%", String.valueOf(minLen)) .replace("%max%", String.valueOf(maxLen)));
@@ -110,7 +110,7 @@ public class ChatInputListener implements Listener
                 player.sendMessage(ChatColor.YELLOW + "已取消创建公会");
                 return;
             }
-            int maxTagLen = plugin.getConfig().getInt("guild.max-tag-length", 6);
+            int maxTagLen = plugin.getGuildConfig().getMaxTagLength();
             if (input.length() < 1 || input.length() > maxTagLen)
             {
                 player.sendMessage(plugin.getMessage("guild.tag-length-invalid") .replace("%max%", String.valueOf(maxTagLen)));
@@ -135,7 +135,7 @@ public class ChatInputListener implements Listener
 
         private void handleGuildTagSetting(Player player, String input, Object context)
         {
-            int maxTagLen = plugin.getConfig().getInt("guild.max-tag-length", 6);
+            int maxTagLen = plugin.getGuildConfig().getMaxTagLength();
             if (input.length() < 1 || input.length() > maxTagLen)
             {
                 player.sendMessage(plugin.getMessage("guild.tag-length-invalid") .replace("%max%", String.valueOf(maxTagLen)));

@@ -84,6 +84,8 @@ public class GuildManager
         }, 100L, 200L);
     }
 
+    public void scheduleSavePublic(Guild guild) { scheduleSave(guild); }
+
     private void scheduleSave(Guild guild)
     {
         pendingSaves.offer(guild);
@@ -107,8 +109,8 @@ public class GuildManager
         }
         String key = name.toLowerCase();
         if (guilds.containsKey(key)) return null;
-        boolean requiresMoney = plugin.getConfig().getBoolean("guild.create-requires-money", true);
-        long createCost = plugin.getConfig().getLong("guild.create-cost", 0);
+        boolean requiresMoney = plugin.getCurrencyConfig().isCreateRequiresMoney();
+        long createCost = plugin.getCurrencyConfig().getCreateCost();
         if (requiresMoney && createCost > 0)
         {
             GuildCurrency.CurrencyType currencyType = plugin.getCurrencyConfig().getCurrencyType();
