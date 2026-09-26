@@ -1,5 +1,5 @@
 name: Guild
-version: 3.0.5
+version: 3.0.7
 main: com.guild.GuildPlugin
 author: ya_xzer21145
 description: 功能全面的公会管理插件，原生兼容 1.8 ~ 26.1+，支持 Spigot/Paper/Purpur/Folia
@@ -11,6 +11,7 @@ softdepend:
   - Vault
   - PlaceholderAPI
   - ProtocolLib
+  - PlayerPoints
 
 commands:
   guild:
@@ -63,6 +64,7 @@ permissions:
     children:
       guild.chat: true
       guild.info: true
+      guild.shop: true
 
   # ========== 细粒度单项权限 ==========
   guild.create:
@@ -100,4 +102,7 @@ permissions:
     default: true
   guild.info:
     description: 查看公会信息
+    default: true
+  guild.shop:
+    description: 使用公会商店
     default: true

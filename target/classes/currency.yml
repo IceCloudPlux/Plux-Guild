@@ -1,0 +1,47 @@
+# ============================================================
+#  Guild 货币系统配置
+#  修改后使用 /guild reload 重载
+# ============================================================
+
+# 货币类型（决定创建/升级/购买经验时扣除哪种货币）
+#   GUILD_COIN   - 内置公会币（默认，无需外部插件）
+#   VAULT        - Vault 经济插件
+#   PLAYERPOINTS - PlayerPoints 积分插件
+type: GUILD_COIN
+
+# 升级公会基础费用（实际 = base * (1 + level * 0.08)）
+level-up-cost: 100000
+
+# 购买经验：消耗货币 / 获得经验值
+experience-cost: 5000
+experience-amount: 50
+
+# 货币显示名称
+display-names:
+  guild_coin: "公会币"
+  vault: "金币"
+  playerpoints: "积分"
+
+# 初始公会币余额（新玩家首次进入时自动给予）
+initial-balance: 0
+
+# 公会币上限（0 = 无限制）
+max-balance: 0
+
+# 创建公会费用相关
+create:
+  cost: 0              # 创建公会所需货币（0 = 免费）
+  requires-money: true # 是否强制需要金钱才能创建
+
+# 升级费用曲线参数
+upgrade-formula:
+  # 实际费用 = base * (1 + level * growth-rate)
+  growth-rate: 0.08    # 每级增长率
+  max-cost: 0          # 单次升级费用上限（0 = 无限制）
+
+# 货币格式化
+format:
+  # 是否启用千分位逗号分隔
+  thousands-separator: true
+  # 小数位数（仅Vault浮点数生效）
+  decimal-places: 0

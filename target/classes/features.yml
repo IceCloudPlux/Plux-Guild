@@ -1,0 +1,23 @@
+# ============================================================
+#  Guild 功能开关配置
+#  修改后使用 /guild reload 重载
+# ============================================================
+
+# 各功能模块开关（false 则对应功能完全禁用）
+bank:           true    # 公会银行系统
+chat:           true    # 公会聊天频道
+experience:     true    # 经验/贡献度系统
+level:          true    # 公会等级系统
+motd:           true    # 公会公告(MOTD)
+tag:            true    # 公会标签显示
+nickname:       true    # 成员昵称功能
+notification:   true    # 上下线通知
+gui:            true   # GUI 界面
+shop:           true   # 公会商店（商品配置见 shop.yml）
+
+# 进阶功能开关
+auto-save:      true    # 自动保存公会数据到数据库
+auto-disband:   false   # 成员全部离线后自动解散公会（谨慎开启）
+daily-reset:    true    # 每日重置日常经验/贡献
+combat-tag:     false   # 战斗中禁止公会操作
+cooldown-bar:   true    # 显示冷却进度条（1.9+）
