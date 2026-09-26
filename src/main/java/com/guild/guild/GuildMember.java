@@ -41,6 +41,11 @@ public class GuildMember
         return muted && System.currentTimeMillis() < mutedUntil;
     }
 
+    public long getMutedUntil()
+    {
+        return mutedUntil;
+    }
+
     public void mute(long durationMs)
     {
         muted = true;

@@ -23,7 +23,7 @@ public class GuildCommand implements CommandExecutor
 
     private final GuildManager guildManager;
 
-    private final Set<UUID> pendingDeleteConfirm = new HashSet<>();
+    private final Map<UUID, String> pendingDeleteConfirm = new HashMap<>();
 
     public GuildCommand(GuildPlugin guildPlugin)
     {
@@ -159,6 +159,21 @@ public boolean onCommand(CommandSender sender, Command cmd, String label, String
         return true;
     }
 
+    /** 安全解析整数（修复旧版多处 NumberFormatException 未捕获导致命令报错） */
+    private int parseIntOrDefault(String input, int def)
+    {
+        if (input == null) return def;
+        try
+        {
+            int value = Integer.parseInt(input);
+            return value > 0 ? value : def;
+        }
+        catch (NumberFormatException e)
+        {
+            return def;
+        }
+    }
+
     private void sendHelp(Player player)
     {
         player.sendMessage(ChatColor.GOLD + "--------------------公会---------------------");
@@ -237,6 +252,21 @@ public boolean onCommand(CommandSender sender, Command cmd, String label, String
             player.sendMessage(ChatColor.RED + "公会名称长度必须在 " + minLen + " 到 " + maxLen + " 之间");
             return;
         }
+        // 名称正则与黑名单校验（guild.yml name-regex / banned-names）
+        String regex = plugin.getGuildConfig().getNameRegex();
+        if (regex != null && !regex.isEmpty() && !name.matches(regex))
+        {
+            player.sendMessage(ChatColor.RED + "公会名称包含非法字符");
+            return;
+        }
+        for (String banned : plugin.getGuildConfig().getBannedNames())
+        {
+            if (name.toLowerCase().contains(banned.toLowerCase()))
+            {
+                player.sendMessage(ChatColor.RED + "该公会名称不被允许");
+                return;
+            }
+        }
         String tag = "";
         if (args.length >= 3)
         {
@@ -246,65 +276,28 @@ public boolean onCommand(CommandSender sender, Command cmd, String label, String
             {
                 player.sendMessage(ChatColor.RED + "标签长度不能超过 " + maxTagLen + " 个字符");
                 return;
-            }}
-
-            long cost = plugin.getCurrencyConfig().getCreateCost();
-            if (cost > 0 && !chargeCreateCost(player, cost))
-            {
-                return;
             }
-            Guild guild = guildManager.createGuild(name, player);
-            if (guild == null)
-            {
-                player.sendMessage(ChatColor.RED + "公会名称已存在");
-                refundCreateCost(player, cost);
-                return;
-            }
-            if (!tag.isEmpty())
-            {
-                guild.setTag(tag);
-            }
-            player.sendMessage(ChatColor.GREEN + "成功创建公会: " + name);
-            if (!tag.isEmpty())
-            {
-                player.sendMessage(ChatColor.GREEN + "公会标签: " + tag);
-            }}
+        }
+        // 修复旧版双重扣费：此处不再预扣费用，统一由 GuildManager.createGuild
+        // 按 currency.yml 配置的货币类型扣费并提示
+        Guild guild = guildManager.createGuild(name, player);
+        if (guild == null)
+        {
+            player.sendMessage(ChatColor.RED + "创建失败：公会名称已存在或货币不足");
+            return;
+        }
+        if (!tag.isEmpty())
+        {
+            guild.setTag(tag);
+        }
+        player.sendMessage(ChatColor.GREEN + "成功创建公会: " + name);
+        if (!tag.isEmpty())
+        {
+            player.sendMessage(ChatColor.GREEN + "公会标签: " + tag);
+        }
+    }
 
-            private boolean chargeCreateCost(Player player, double cost)
-            {
-                GuildCurrency currency = plugin.getGuildCurrency();
-                if (currency.isVaultAvailable())
-                {
-                    if (currency.withdraw(player.getUniqueId(), (long) cost, GuildCurrency.CurrencyType.VAULT))
-                    {
-                        return true;
-                    }}
-
-                    if (currency.isPlayerPointsAvailable())
-                    {
-                        if (currency.withdraw(player.getUniqueId(), (long) cost, GuildCurrency.CurrencyType.PLAYER_POINTS))
-                        {
-                            return true;
-                        }}
-
-                        player.sendMessage(ChatColor.RED + "创建公会需要 " + cost + " 金币/点数");
-                        return false;
-                    }
-
-                    private void refundCreateCost(Player player, double cost)
-                    {
-                        if (cost <= 0) return;
-                        GuildCurrency currency = plugin.getGuildCurrency();
-                        if (currency.isVaultAvailable())
-                        {
-                            currency.deposit(player.getUniqueId(), (long) cost, GuildCurrency.CurrencyType.VAULT);
-                        }
-                        else if (currency.isPlayerPointsAvailable())
-                        {
-                            currency.deposit(player.getUniqueId(), (long) cost, GuildCurrency.CurrencyType.PLAYER_POINTS);
-                        }}
-
-                        private void handleJoin(Player player, String[] args)
+    private void handleJoin(Player player, String[] args)
                         {
                             if (args.length < 2)
                             {
@@ -710,15 +703,24 @@ public boolean onCommand(CommandSender sender, Command cmd, String label, String
                                                                     return;
                                                                 }
                                                                 GuildMember member = guild.getMember(player.getUniqueId());
+                                                                if (member == null)
+                                                                {
+                                                                    player.sendMessage(ChatColor.RED + "数据异常，请重新加入公会");
+                                                                    return;
+                                                                }
                                                                 if (member.isMuted())
                                                                 {
                                                                     player.sendMessage(ChatColor.RED + "你已被禁言，无法发送消息");
                                                                     return;
                                                                 }
                                                                 String message = String.join(" ", args);
-                                                                String format = ChatColor.GOLD + "[公会] " + guild.getTagColor() + "[" + guild.getTag() + "] " + ChatColor.WHITE + "%player%: %message%";
-                                                                format = format.replace("%player%", player.getDisplayName()).replace("%message%", message);
-                                                                guild.broadcast(format);
+                                                                // 聊天格式改为配置驱动（guild.yml chat.format）
+                                                                String format = plugin.getGuildConfig().getChatFormat();
+                                                                format = format.replace("{tag_color}", guild.getTagColor())
+                                                                    .replace("{tag}", guild.getTag())
+                                                                    .replace("{player}", player.getDisplayName())
+                                                                    .replace("{message}", message);
+                                                                guild.broadcast(ChatColor.translateAlternateColorCodes('&', format));
                                                             }
 
                                                             private void handleOfficerChat(Player player, String[] args)
@@ -729,20 +731,23 @@ public boolean onCommand(CommandSender sender, Command cmd, String label, String
                                                                     return;
                                                                 }
                                                                 Guild guild = guildManager.getPlayerGuild(player.getUniqueId());
-                                                                if (guild == null || (guild.getMember(player.getUniqueId()).getRole() != GuildRole.OFFICER && guild.getMember(player.getUniqueId()).getRole() != GuildRole.OWNER))
+                                                                GuildMember self = guild != null ? guild.getMember(player.getUniqueId()) : null;
+                                                                if (guild == null || self == null || (self.getRole() != GuildRole.OFFICER && self.getRole() != GuildRole.OWNER))
                                                                 {
                                                                     player.sendMessage(ChatColor.RED + "只有管理员和会长可以使用管理频道");
                                                                     return;
                                                                 }
                                                                 String message = String.join(" ", args);
-                                                                String format = ChatColor.BLUE + "[管理] " + ChatColor.WHITE + "%player%: %message%";
-                                                                format = format.replace("%player%", player.getDisplayName()).replace("%message%", message);
-                                                                guild.broadcastToOfficers(format);
+                                                                // 管理频道格式改为配置驱动（guild.yml chat.officer-format）
+                                                                String format = plugin.getGuildConfig().getOfficerChatFormat();
+                                                                format = format.replace("{player}", player.getDisplayName())
+                                                                    .replace("{message}", message);
+                                                                guild.broadcastToOfficers(ChatColor.translateAlternateColorCodes('&', format));
                                                             }
 
                                                             private void handleTop(Player player, String[] args)
                                                             {
-                                                                int page = args.length > 1 ? Integer.parseInt(args[1]) : 1;
+                                                                int page = parseIntOrDefault(args.length > 1 ? args[1] : null, 1);
                                                                 Guild guild = guildManager.getPlayerGuild(player.getUniqueId());
                                                                 if (guild == null)
                                                                 {
@@ -764,13 +769,13 @@ public boolean onCommand(CommandSender sender, Command cmd, String label, String
 
                                                                 private void handleLog(Player player, String[] args)
                                                                 {
-                                                                    int page = args.length > 1 ? Integer.parseInt(args[1]) : 1;
+                                                                    int page = parseIntOrDefault(args.length > 1 ? args[1] : null, 1);
                                                                     player.sendMessage(ChatColor.YELLOW + "公会日志功能开发中... (第" + page + "页)");
                                                                 }
 
                                                                 private void handleRequests(Player player, String[] args)
                                                                 {
-                                                                    int page = args.length > 1 ? Integer.parseInt(args[1]) : 1;
+                                                                    int page = parseIntOrDefault(args.length > 1 ? args[1] : null, 1);
                                                                     Guild guild = guildManager.getPlayerGuild(player.getUniqueId());
                                                                     if (guild == null || !guild.hasPermission(player.getUniqueId(), "invite"))
                                                                     {
@@ -844,7 +849,8 @@ public boolean onCommand(CommandSender sender, Command cmd, String label, String
                                                                         }
                                                                         switch (args[1].toLowerCase())
                                                                         {
-                                                                            case " public": guild.setPublicGuild(Boolean.parseBoolean(args[2]));
+                                                                            // 修复旧版 case 带前导空格导致设置永远提示"未知属性"
+                                                                            case "public": guild.setPublicGuild(Boolean.parseBoolean(args[2]));
                                                                             player.sendMessage(ChatColor.GREEN + "公开状态已设置为: " + args[2]);
                                                                             break;
                                                                             default: player.sendMessage(ChatColor.RED + "未知属性: " + args[1]);
@@ -916,18 +922,31 @@ public boolean onCommand(CommandSender sender, Command cmd, String label, String
                                                                                 return;
                                                                             }
                                                                             String newName = args[1];
-                                                                            if (guildManager.getGuild(newName) != null)
-                                                                            {
-                                                                                player.sendMessage(ChatColor.RED + "该名称已被占用");
-                                                                                return;
+                                                                                if (guildManager.getGuild(newName) != null)
+                                                                                {
+                                                                                    player.sendMessage(ChatColor.RED + "该名称已被占用");
+                                                                                    return;
+                                                                                }
+                                                                                // 名称合法性校验（与创建时一致）
+                                                                                int minLen = plugin.getGuildConfig().getMinNameLength();
+                                                                                int maxLen = plugin.getGuildConfig().getMaxNameLength();
+                                                                                if (newName.length() < minLen || newName.length() > maxLen)
+                                                                                {
+                                                                                    player.sendMessage(ChatColor.RED + "公会名称长度必须在 " + minLen + " 到 " + maxLen + " 之间");
+                                                                                    return;
+                                                                                }
+                                                                                // 修复旧版危险实现：旧版通过"解散+重建"改名，
+                                                                                // 会丢失所有成员/等级/经验/银行/权限数据并重复扣创建费。
+                                                                                // 现改为 GuildManager.renameGuild 原地迁移数据
+                                                                                if (guildManager.renameGuild(guild.getName(), newName, player.getUniqueId()))
+                                                                                {
+                                                                                    player.sendMessage(ChatColor.GREEN + "公会已重命名为: " + newName);
+                                                                                }
+                                                                                else
+                                                                                {
+                                                                                    player.sendMessage(ChatColor.RED + "重命名失败");
+                                                                                }
                                                                             }
-                                                                            player.sendMessage(ChatColor.YELLOW + "公会重命名请求已提交，请等待审核...");
-                                                                            String oldName = guild.getName();
-                                                                            guildManager.disbandGuild(oldName, player.getUniqueId());
-                                                                            guild.setName(newName);
-                                                                            guildManager.createGuild(newName, Bukkit.getPlayer(guild.getOwner()));
-                                                                            player.sendMessage(ChatColor.GREEN + "公会已重命名为: " + newName);
-                                                                        }
 
                                                                         private void handleGExp(Player player, String[] subArgs)
                                                                         {
@@ -947,7 +966,16 @@ public boolean onCommand(CommandSender sender, Command cmd, String label, String
                                                                                 player.sendMessage(ChatColor.RED + "公会不存在");
                                                                                 return;
                                                                             }
-                                                                            long amount = Long.parseLong(subArgs[1]);
+                                                                            long amount;
+                                                                            try
+                                                                            {
+                                                                                amount = Long.parseLong(subArgs[1]);
+                                                                            }
+                                                                            catch (NumberFormatException e)
+                                                                            {
+                                                                                player.sendMessage(ChatColor.RED + "无效的经验数量");
+                                                                                return;
+                                                                            }
                                                                             guild.addExperience(amount);
                                                                             plugin.getDatabaseManager().saveGuild(guild);
                                                                             player.sendMessage(ChatColor.GREEN + "已给予 " + amount + " 经验到公会 " + guild.getName());
@@ -971,9 +999,24 @@ public boolean onCommand(CommandSender sender, Command cmd, String label, String
                                                                                 player.sendMessage(ChatColor.RED + "公会不存在");
                                                                                 return;
                                                                             }
-                                                                            guild.setLevel(Integer.parseInt(subArgs[1]));
+                                                                            int level;
+                                                                            try
+                                                                            {
+                                                                                level = Integer.parseInt(subArgs[1]);
+                                                                            }
+                                                                            catch (NumberFormatException e)
+                                                                            {
+                                                                                player.sendMessage(ChatColor.RED + "无效的等级数字");
+                                                                                return;
+                                                                            }
+                                                                            if (level < 0 || level > plugin.getGuildConfig().getMaxLevel())
+                                                                            {
+                                                                                player.sendMessage(ChatColor.RED + "等级必须在 0 到 " + plugin.getGuildConfig().getMaxLevel() + " 之间");
+                                                                                return;
+                                                                            }
+                                                                            guild.setLevel(level);
                                                                             plugin.getDatabaseManager().saveGuild(guild);
-                                                                            player.sendMessage(ChatColor.GREEN + "已设置公会等级为 " + guild.getLevel());
+                                                                            player.sendMessage(ChatColor.GREEN + "已设置公会 " + guild.getName() + " 的等级为 " + level);
                                                                         }
 
                                                                         private void handleClxpLev(Player player, String[] subArgs)
@@ -1059,7 +1102,16 @@ public boolean onCommand(CommandSender sender, Command cmd, String label, String
                                                                                     player.sendMessage(ChatColor.RED + "玩家不在线");
                                                                                     return;
                                                                                 }
-                                                                                long minutes = Long.parseLong(args[2]);
+                                                                                long minutes;
+                                                                                try
+                                                                                {
+                                                                                    minutes = Long.parseLong(args[2]);
+                                                                                }
+                                                                                catch (NumberFormatException e)
+                                                                                {
+                                                                                    player.sendMessage(ChatColor.RED + "无效的分钟数");
+                                                                                    return;
+                                                                                }
                                                                                 GuildMember member = guild.getMember(target.getUniqueId());
                                                                                 if (member == null)
                                                                                 {
@@ -1139,6 +1191,12 @@ public boolean onCommand(CommandSender sender, Command cmd, String label, String
                                                                                     player.sendMessage(ChatColor.RED + "你不在任何公会中");
                                                                                     return;
                                                                                 }
+                                                                                // 银行功能开关（features.yml bank.enabled）
+                                                                                if (!plugin.getFeatureConfig().isBankEnabled())
+                                                                                {
+                                                                                    player.sendMessage(ChatColor.RED + "公会银行功能已关闭");
+                                                                                    return;
+                                                                                }
                                                                                 try
                                                                                 {
                                                                                     long amount = Long.parseLong(args[1]);
@@ -1153,7 +1211,7 @@ public boolean onCommand(CommandSender sender, Command cmd, String label, String
                                                                                     }
                                                                                     else
                                                                                     {
-                                                                                        player.sendMessage(ChatColor.RED + "存款失败，余额不足");
+                                                                                        player.sendMessage(ChatColor.RED + "存款失败：余额不足或超出限额");
                                                                                     }}
 
                                                                                     catch (NumberFormatException e)
@@ -1172,6 +1230,12 @@ public boolean onCommand(CommandSender sender, Command cmd, String label, String
                                                                                         if (guild == null)
                                                                                         {
                                                                                             player.sendMessage(ChatColor.RED + "你不在任何公会中");
+                                                                                            return;
+                                                                                        }
+                                                                                        // 银行功能开关（features.yml bank.enabled）
+                                                                                        if (!plugin.getFeatureConfig().isBankEnabled())
+                                                                                        {
+                                                                                            player.sendMessage(ChatColor.RED + "公会银行功能已关闭");
                                                                                             return;
                                                                                         }
                                                                                         try
@@ -1210,11 +1274,30 @@ public boolean onCommand(CommandSender sender, Command cmd, String label, String
                                                                                                 }
                                                                                                 if ("confirm".equalsIgnoreCase(subArgs[0]))
                                                                                                 {
-                                                                                                    if (pendingDeleteConfirm.remove(player.getUniqueId()))
+                                                                                                    // 修复旧版确认逻辑反转导致永远无法删除的问题：
+                                                                                                    // 记录待删除公会名，确认时执行删除
+                                                                                                    String pendingName = pendingDeleteConfirm.remove(player.getUniqueId());
+                                                                                                    if (pendingName == null)
                                                                                                     {
-                                                                                                        player.sendMessage(ChatColor.RED + "请重新使用 /guild delete <公会名> 后确认");
+                                                                                                        player.sendMessage(ChatColor.RED + "请先使用 /guild delete <公会名> 发起删除");
                                                                                                         return;
-                                                                                                    }}
+                                                                                                    }
+                                                                                                    Guild confirmGuild = guildManager.getGuild(pendingName);
+                                                                                                    if (confirmGuild == null)
+                                                                                                    {
+                                                                                                        player.sendMessage(ChatColor.RED + "公会不存在");
+                                                                                                        return;
+                                                                                                    }
+                                                                                                    if (guildManager.disbandGuild(confirmGuild.getName(), confirmGuild.getOwner()))
+                                                                                                    {
+                                                                                                        player.sendMessage(ChatColor.RED + "公会 [" + confirmGuild.getName() + "] 已被强制删除");
+                                                                                                    }
+                                                                                                    else
+                                                                                                    {
+                                                                                                        player.sendMessage(ChatColor.RED + "删除失败");
+                                                                                                    }
+                                                                                                    return;
+                                                                                                }
 
                                                                                                     Guild guild = guildManager.getGuild(subArgs[0]);
                                                                                                     if (guild == null)
@@ -1222,7 +1305,7 @@ public boolean onCommand(CommandSender sender, Command cmd, String label, String
                                                                                                         player.sendMessage(ChatColor.RED + "公会不存在");
                                                                                                         return;
                                                                                                     }
-                                                                                                    pendingDeleteConfirm.add(player.getUniqueId());
+                                                                                                    pendingDeleteConfirm.put(player.getUniqueId(), subArgs[0].toLowerCase());
                                                                                                     player.sendMessage(ChatColor.RED + "警告：即将强制删除公会 [" + guild.getName() + "]");
                                                                                                     player.sendMessage(ChatColor.YELLOW + "请输入 /guild delete confirm 确认操作");
                                                                                                 }

@@ -6,6 +6,7 @@ import org.bukkit.entity.Player;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.LongAdder;
 
@@ -18,12 +19,15 @@ public class GuildManager
     private final Map<UUID, GuildInvite> invites = new ConcurrentHashMap<>();
     private final Map<UUID, PlayerSettings> playerSettings = new ConcurrentHashMap<>();
     private final Map<UUID, Long> playerGuildCurrency = new ConcurrentHashMap<>();
+    /** 每日银行限额追踪: uuid -> [当天epochDay, 已存, 已取] */
+    private final Map<UUID, long[]> dailyBankUsage = new ConcurrentHashMap<>();
     private final Map<UUID, String> playerNameCache = new ConcurrentHashMap<>();
     private final LongAdder totalCacheHits = new LongAdder();
     private final LongAdder totalCacheMisses = new LongAdder();
     private volatile long lastCacheCleanup = System.currentTimeMillis();
     private static final long CACHE_CLEANUP_INTERVAL = 300000L;
     private static final long INVITE_EXPIRE_TIME = 600000L;
+    private static final long REQUEST_EXPIRE_TIME = 600000L;
     private final Queue<Guild> pendingSaves = new ConcurrentLinkedQueue<>();
     private final AtomicBoolean saveRunning = new AtomicBoolean(false);
 
@@ -97,6 +101,12 @@ public class GuildManager
         {
             long now = System.currentTimeMillis();
             invites.entrySet().removeIf(entry -> now - entry.getValue().getInviteTime() > INVITE_EXPIRE_TIME);
+            // 同步清理过期的入会申请，防止幽灵申请长期堆积
+            for (List<GuildRequest> requestList : requests.values())
+            {
+                requestList.removeIf(r -> now - r.getRequestTime() > REQUEST_EXPIRE_TIME);
+            }
+            requests.entrySet().removeIf(entry -> entry.getValue().isEmpty());
         }, 60000L, 60000L);
     }
 
@@ -109,6 +119,7 @@ public class GuildManager
         }
         String key = name.toLowerCase();
         if (guilds.containsKey(key)) return null;
+        if (playerGuilds.containsKey(player.getUniqueId())) return null;
         boolean requiresMoney = plugin.getCurrencyConfig().isCreateRequiresMoney();
         long createCost = plugin.getCurrencyConfig().getCreateCost();
         if (requiresMoney && createCost > 0)
@@ -116,22 +127,41 @@ public class GuildManager
             GuildCurrency.CurrencyType currencyType = plugin.getCurrencyConfig().getCurrencyType();
             if (!plugin.getGuildCurrency().withdraw(player.getUniqueId(), createCost, currencyType))
             {
-                String currencyName = "";
-                switch (currencyType)
-                {
-                    case VAULT: currencyName = plugin.getCurrencyConfig().getVaultCurrencyName(); break;
-                    case PLAYER_POINTS: currencyName = plugin.getCurrencyConfig().getPlayerPointsCurrencyName(); break;
-                    case GUILD_COIN: currencyName = plugin.getCurrencyConfig().getGuildCurrencyName(); break;
-                }
-                player.sendMessage(ChatColor.RED + "创建公会需要 " + createCost + " " + currencyName);
+                String currencyName = plugin.getGuildCurrency().formatAmount(createCost, currencyType);
+                player.sendMessage(ChatColor.RED + "创建公会需要 " + currencyName);
                 return null;
             }
         }
-        Guild guild = new Guild(name, player.getUniqueId());
+        Guild guild = new Guild(name, player.getUniqueId(), plugin);
         guilds.put(key, guild);
         playerGuilds.put(player.getUniqueId(), key);
         scheduleSave(guild);
         return guild;
+    }
+
+    /**
+     * 重命名公会：保留全部成员、等级、经验、银行与权限数据，
+     * 仅迁移内存索引与数据库记录（替代旧版"解散后重建"的危险实现）
+     */
+    public boolean renameGuild(String oldName, String newName, UUID operatorUuid)
+    {
+        String oldKey = oldName.toLowerCase();
+        Guild guild = guilds.get(oldKey);
+        if (guild == null) return false;
+        if (!guild.getOwner().equals(operatorUuid)) return false;
+        String newKey = newName.toLowerCase();
+        if (guilds.containsKey(newKey)) return false;
+        guilds.remove(oldKey);
+        guild.setName(newName);
+        guilds.put(newKey, guild);
+        for (UUID memberUuid : guild.getMembers().keySet())
+        {
+            playerGuilds.put(memberUuid, newKey);
+        }
+        // 迁移数据库记录（旧名称的成员/权限/银行记录全部转移）
+        plugin.getDatabaseManager().migrateGuildName(oldName, newName);
+        scheduleSave(guild);
+        return true;
     }
 
     public boolean disbandGuild(String name, UUID playerUuid)
@@ -241,8 +271,13 @@ public class GuildManager
 
     public void addRequest(String guildName, UUID playerUuid, String playerName)
     {
-        requests.computeIfAbsent(guildName.toLowerCase(), k -> new ArrayList<>())
-            .add(new GuildRequest(playerUuid, playerName));
+        List<GuildRequest> requestList = requests.computeIfAbsent(guildName.toLowerCase(), k -> new CopyOnWriteArrayList<>());
+        // 防止同一玩家重复提交申请
+        for (GuildRequest existing : requestList)
+        {
+            if (existing.getPlayerUuid().equals(playerUuid)) return;
+        }
+        requestList.add(new GuildRequest(playerUuid, playerName));
     }
 
     public List<GuildRequest> getRequests(String guildName)
@@ -315,16 +350,45 @@ public class GuildManager
 
     public void addExperience(UUID playerUuid, long amount)
     {
+        if (amount <= 0) return;
         String guildName = playerGuilds.get(playerUuid);
         if (guildName == null) return;
         Guild guild = guilds.get(guildName);
         if (guild == null) return;
-        guild.addExperience(amount);
+        long finalAmount = amount;
+        // 周末/节假日经验加成（experience.yml）
+        double multiplier = plugin.getExperienceConfig().getWeekendMultiplier();
+        Calendar calendar = Calendar.getInstance();
+        int dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK);
+        if ((dayOfWeek == Calendar.SATURDAY || dayOfWeek == Calendar.SUNDAY) && multiplier > 1.0)
+        {
+            finalAmount = (long) (finalAmount * multiplier);
+        }
+        double holidayMultiplier = plugin.getExperienceConfig().getHolidayMultiplier();
+        if (holidayMultiplier != 1.0)
+        {
+            finalAmount = (long) (finalAmount * holidayMultiplier);
+        }
+        if (finalAmount <= 0) return;
         GuildMember member = guild.getMember(playerUuid);
+        // 每日经验/贡献上限（0 = 无限制，experience.yml）
+        long expLimit = plugin.getExperienceConfig().getDailyExpLimit();
+        if (expLimit > 0 && guild.getDailyExperience() + finalAmount > expLimit)
+        {
+            finalAmount = Math.max(0L, expLimit - guild.getDailyExperience());
+        }
         if (member != null)
         {
-            member.addContribution(amount);
+            long contributionLimit = plugin.getExperienceConfig().getDailyContributionLimit();
+            long contribution = finalAmount;
+            if (contributionLimit > 0 && member.getDailyContribution() + contribution > contributionLimit)
+            {
+                contribution = Math.max(0L, contributionLimit - member.getDailyContribution());
+            }
+            member.addContribution(contribution);
         }
+        if (finalAmount <= 0) return;
+        guild.addExperience(finalAmount);
         scheduleSave(guild);
     }
 
@@ -336,24 +400,104 @@ public class GuildManager
 
     public boolean depositToBank(String guildName, UUID playerUuid, long amount)
     {
+        if (amount <= 0L) return false;
         Guild guild = guilds.get(guildName.toLowerCase());
         if (guild == null || !guild.isMember(playerUuid)) return false;
-        if (guild.getBank().deposit(amount))
+        com.guild.config.BankConfig bankConfig = plugin.getBankConfig();
+        // 单次存款上限
+        long maxDeposit = bankConfig.getMaxDeposit();
+        if (maxDeposit > 0 && amount > maxDeposit) return false;
+        // 每日存款限额
+        long dailyLimit = bankConfig.getDailyDepositLimit();
+        if (dailyLimit > 0)
         {
-            guild.getBank().addDepositRecord(getPlayerNameCached(playerUuid), amount);
+            long[] usage = dailyBankUsage.computeIfAbsent(playerUuid, k -> new long[]
+            { java.time.LocalDate.now().toEpochDay(), 0L, 0L });
+            if (usage[0] != java.time.LocalDate.now().toEpochDay())
+            {
+                usage[0] = java.time.LocalDate.now().toEpochDay();
+                usage[1] = 0L;
+                usage[2] = 0L;
+            }
+            if (usage[1] + amount > dailyLimit) return false;
+        }
+        // 银行余额上限
+        long maxBalance = bankConfig.getMaxBalance();
+        if (maxBalance > 0 && guild.getBank().getBalance() + amount > maxBalance) return false;
+        // 先从玩家钱包扣款（按 currency.yml 配置的货币类型）
+        GuildCurrency.CurrencyType currencyType = plugin.getCurrencyConfig().getCurrencyType();
+        if (!plugin.getGuildCurrency().withdraw(playerUuid, amount, currencyType)) return false;
+        // 存款税率：扣除后实际入账
+        double tax = bankConfig.getDepositTax();
+        long net = amount;
+        if (tax > 0)
+        {
+            net = (long) (amount * (1.0 - Math.min(tax, 1.0)));
+        }
+        if (net <= 0)
+        {
+            // 税后为0，退还扣款
+            plugin.getGuildCurrency().deposit(playerUuid, amount, currencyType);
+            return false;
+        }
+        if (guild.getBank().deposit(net))
+        {
+            guild.getBank().addDepositRecord(getPlayerNameCached(playerUuid), net);
+            if (dailyLimit > 0)
+            {
+                dailyBankUsage.get(playerUuid)[1] += amount;
+            }
             scheduleSave(guild);
             return true;
         }
+        // 入账失败则退还扣款
+        plugin.getGuildCurrency().deposit(playerUuid, amount, currencyType);
         return false;
     }
 
     public boolean withdrawFromBank(String guildName, UUID playerUuid, long amount)
     {
+        if (amount <= 0L) return false;
         Guild guild = guilds.get(guildName.toLowerCase());
         if (guild == null || !guild.isMember(playerUuid) || !guild.hasPermission(playerUuid, "withdraw")) return false;
+        com.guild.config.BankConfig bankConfig = plugin.getBankConfig();
+        // 单次取款上限
+        long maxWithdraw = bankConfig.getMaxWithdraw();
+        if (maxWithdraw > 0 && amount > maxWithdraw) return false;
+        // 每日取款限额
+        long dailyLimit = bankConfig.getDailyWithdrawLimit();
+        if (dailyLimit > 0)
+        {
+            long[] usage = dailyBankUsage.computeIfAbsent(playerUuid, k -> new long[]
+            { java.time.LocalDate.now().toEpochDay(), 0L, 0L });
+            if (usage[0] != java.time.LocalDate.now().toEpochDay())
+            {
+                usage[0] = java.time.LocalDate.now().toEpochDay();
+                usage[1] = 0L;
+                usage[2] = 0L;
+            }
+            if (usage[2] + amount > dailyLimit) return false;
+        }
+        // 最低保留余额
+        long minBalance = bankConfig.getMinBalance();
+        if (guild.getBank().getBalance() - amount < minBalance) return false;
+        // 取款税率：扣除后实际到账
+        double tax = bankConfig.getWithdrawTax();
+        long net = amount;
+        if (tax > 0)
+        {
+            net = (long) (amount * (1.0 - Math.min(tax, 1.0)));
+        }
+        if (net <= 0) return false;
         if (guild.getBank().withdraw(amount))
         {
             guild.getBank().addWithdrawRecord(getPlayerNameCached(playerUuid), amount);
+            // 将资金发放到玩家钱包（按 currency.yml 配置的货币类型）
+            plugin.getGuildCurrency().deposit(playerUuid, net, plugin.getCurrencyConfig().getCurrencyType());
+            if (dailyLimit > 0)
+            {
+                dailyBankUsage.get(playerUuid)[2] += amount;
+            }
             scheduleSave(guild);
             return true;
         }
@@ -368,7 +512,18 @@ public class GuildManager
     public boolean depositPlayerGuildCurrency(UUID playerUuid, long amount)
     {
         if (amount <= 0L) return false;
-        playerGuildCurrency.merge(playerUuid, amount, Long::sum);
+        long maxBalance = plugin.getCurrencyConfig().getMaxBalance();
+        long result = playerGuildCurrency.merge(playerUuid, amount, Long::sum);
+        // 公会币上限（0 = 无限制，currency.yml）
+        if (maxBalance > 0)
+        {
+            if (result > maxBalance)
+            {
+                playerGuildCurrency.put(playerUuid, maxBalance);
+                result = maxBalance;
+            }
+        }
+        savePlayerCurrencyAsync(playerUuid);
         return true;
     }
 
@@ -380,21 +535,68 @@ public class GuildManager
             Long current = playerGuildCurrency.get(playerUuid);
             long cur = current != null ? current : 0L;
             if (cur < amount) return false;
-            if (playerGuildCurrency.replace(playerUuid, cur, cur - amount)) return true;
+            if (playerGuildCurrency.replace(playerUuid, cur, cur - amount)) break;
         }
+        savePlayerCurrencyAsync(playerUuid);
+        return true;
     }
 
     public boolean setPlayerGuildCurrency(UUID playerUuid, long amount)
     {
         if (amount < 0L) return false;
         playerGuildCurrency.put(playerUuid, amount);
+        savePlayerCurrencyAsync(playerUuid);
         return true;
+    }
+
+    /** 异步持久化玩家公会币余额（修复旧版重启后余额丢失问题） */
+    private void savePlayerCurrencyAsync(UUID playerUuid)
+    {
+        long balance = playerGuildCurrency.getOrDefault(playerUuid, 0L);
+        try
+        {
+            plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () ->
+                plugin.getDatabaseManager().savePlayerCurrency(playerUuid, balance));
+        }
+        catch (IllegalStateException ignored)
+        {
+            // 插件已禁用时跳过异步调度
+        }
+    }
+
+    /** 启动时从数据库加载所有玩家的公会币余额 */
+    public void loadPlayerCurrencyBalances(Map<UUID, Long> balances)
+    {
+        playerGuildCurrency.putAll(balances);
+    }
+
+    /**
+     * 确保玩家在数据库中有公会币账户行（用于发放 initial-balance 初始余额）。
+     * 仅在玩家首次加入服务器时异步调用一次。
+     */
+    public void ensurePlayerCurrencyRow(UUID playerUuid)
+    {
+        if (playerGuildCurrency.containsKey(playerUuid)) return;
+        try
+        {
+            plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () ->
+            {
+                long initial = plugin.getCurrencyConfig().getInitialBalance();
+                long balance = plugin.getDatabaseManager().ensurePlayerCurrency(playerUuid, initial);
+                playerGuildCurrency.put(playerUuid, balance);
+            });
+        }
+        catch (IllegalStateException ignored)
+        {
+        }
     }
 
     public boolean upgradeGuild(String guildName, UUID playerUuid)
     {
         Guild guild = guilds.get(guildName.toLowerCase());
-        if (guild == null || !guild.getOwner().equals(playerUuid) || guild.getLevel() >= 100) return false;
+        // 最高等级改为配置驱动（guild.yml max-level）
+        int maxLevel = plugin.getGuildConfig().getMaxLevel();
+        if (guild == null || !guild.getOwner().equals(playerUuid) || guild.getLevel() >= maxLevel) return false;
         GuildCurrency.CurrencyType currencyType = plugin.getCurrencyConfig().getCurrencyType();
         long cost = plugin.getCurrencyConfig().getLevelUpCost(guild.getLevel());
         if (!plugin.getGuildCurrency().withdraw(playerUuid, cost, currencyType)) return false;
@@ -475,7 +677,9 @@ public class GuildManager
             {
                 member.setDailyContribution(0L);
             }
+            scheduleSave(guild);
         }
+        dailyBankUsage.clear();
     }
 
     public static class GuildRequest

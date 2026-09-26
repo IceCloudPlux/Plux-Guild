@@ -1,4 +1,6 @@
 package com.guild.guild;
+import com.guild.GuildPlugin;
+import com.guild.api.event.GuildLevelUpEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import java.util.Map;
@@ -21,11 +23,22 @@ public class Guild
     private final Map<String, GuildPermission> permissions = new ConcurrentHashMap<>();
     private GuildBank bank;
 
+    /**
+     * 插件主类引用（用于读取可配置的等级/成员/经验公式）
+     * 反序列化或旧调用路径下可能为 null，此时回退到内置默认值
+     */
+    private final GuildPlugin plugin;
+
     public Guild(String name, UUID owner)
+    {
+        this(name, owner, null);
+    }
+
+    public Guild(String name, UUID owner, GuildPlugin plugin)
     {
         this.name = name;
         this.tag = name.substring(0, Math.min(4, name.length()));
-        this.tagColor = "&f";
+        this.tagColor = plugin != null ? plugin.getGuildConfig().getDefaultTagColor() : "&f";
         this.owner = owner;
         this.level = 1;
         this.experience = 0L;
@@ -33,6 +46,7 @@ public class Guild
         this.motd = "";
         this.publicGuild = true;
         this.createdTime = System.currentTimeMillis();
+        this.plugin = plugin;
         GuildMember ownerMember = new GuildMember(owner, GuildRole.OWNER);
         members.put(owner, ownerMember);
         initializeDefaultPermissions();
@@ -54,7 +68,13 @@ public class Guild
 
     public int getMaxMembers()
     {
-        return 25 + level * 5;
+        if (plugin == null) return 25 + level * 5;
+        return plugin.getGuildConfig().getBaseMembers() + level * plugin.getGuildConfig().getMembersPerLevel();
+    }
+
+    public int getMaxLevel()
+    {
+        return plugin != null ? plugin.getGuildConfig().getMaxLevel() : 100;
     }
 
     public boolean canAddMember()
@@ -102,6 +122,7 @@ public class Guild
 
     public synchronized void addExperience(long amount)
     {
+        if (amount <= 0) return;
         experience += amount;
         dailyExperience += amount;
         checkLevelUp();
@@ -109,18 +130,41 @@ public class Guild
 
     private void checkLevelUp()
     {
+        int maxLevel = getMaxLevel();
+        boolean leveledUp = false;
+        int oldLevel = level;
         long required = getRequiredExperience();
-        while (experience >= required && level < 100)
+        while (experience >= required && level < maxLevel)
         {
             experience -= required;
             level++;
+            leveledUp = true;
             required = getRequiredExperience();
+        }
+        if (leveledUp && plugin != null)
+        {
+            try
+            {
+                Bukkit.getPluginManager().callEvent(new GuildLevelUpEvent(name, oldLevel, level));
+            }
+            catch (Throwable ignored)
+            {
+            }
         }
     }
 
     public long getRequiredExperience()
     {
-        return (long) (500.0 * level * (1 + level * 0.02));
+        if (plugin == null)
+        {
+            return (long) (500.0 * level * (1 + level * 0.02));
+        }
+        long base = plugin.getExperienceConfig().getLevelFormulaBase();
+        double growth = plugin.getExperienceConfig().getLevelFormulaGrowthRate();
+        long required = (long) (base * level * (1 + level * growth));
+        long maxRequired = plugin.getExperienceConfig().getLevelFormulaMaxRequired();
+        if (maxRequired > 0 && required > maxRequired) required = maxRequired;
+        return required;
     }
 
     public boolean hasPermission(UUID playerUuid, String permissionKey)

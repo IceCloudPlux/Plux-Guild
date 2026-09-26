@@ -85,7 +85,13 @@ public class ChatInputListener implements Listener
                 player.sendMessage(plugin.getMessage("guild.name-length-invalid") .replace("%min%", String.valueOf(minLen)) .replace("%max%", String.valueOf(maxLen)));
                 return;
             }
-            if (!input.matches("[a-zA-Z0-9\u4e00-\u9fa5_]+"))
+            // 正则改为配置驱动（guild.yml name-regex），修复旧版硬编码导致配置失效
+            String regex = plugin.getGuildConfig().getNameRegex();
+            if (regex == null || regex.isEmpty())
+            {
+                regex = "[a-zA-Z0-9\u4e00-\u9fa5_]+";
+            }
+            if (!input.matches(regex))
             {
                 player.sendMessage(plugin.getMessage("guild.name-chars-invalid"));
                 return;

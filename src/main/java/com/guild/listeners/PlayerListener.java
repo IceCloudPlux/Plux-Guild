@@ -20,42 +20,57 @@ public class PlayerListener implements Listener
     public PlayerListener(GuildPlugin guildPlugin)
     {
         this.plugin = guildPlugin;
-    }@ EventHandler public void onPlayerJoin(PlayerJoinEvent playerJoinEvent)
+    }
+
+    @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent event)
     {
-        Player player = playerJoinEvent.getPlayer();
-        Guild guild = this.plugin.getGuildManager().getPlayerGuild(player.getUniqueId());
-        if (guild != null)
+        Player player = event.getPlayer();
+        // 异步确保公会币账户行存在（首次加入发放 initial-balance 初始余额）
+        plugin.getGuildManager().ensurePlayerCurrencyRow(player.getUniqueId());
+        Guild guild = plugin.getGuildManager().getPlayerGuild(player.getUniqueId());
+        if (guild == null) return;
+        for (GuildMember member : guild.getMembers().values())
         {
-            for (GuildMember guildMember : guild.getMembers().values())
+            if (member.getUuid().equals(player.getUniqueId())) continue;
+            PlayerSettings settings = plugin.getGuildManager().getPlayerSettings(member.getUuid());
+            if (!settings.isNotifyOnlineStatus()) continue;
+            Player online = Bukkit.getPlayer(member.getUuid());
+            if (online != null && online.isOnline())
             {
-                Player player2;
-                PlayerSettings playerSettings;
-                if (guildMember.getUuid().equals(player.getUniqueId()) || !(playerSettings = this.plugin.getGuildManager().getPlayerSettings(guildMember.getUuid())).isNotifyOnlineStatus() || (player2 = Bukkit.getPlayer((UUID)guildMember.getUuid())) == null || !player2.isOnline()) continue;
-                player2.sendMessage(ChatColor.YELLOW + player.getName() + " \u4e0a\u7ebf\u4e86");
-            }}
-
-        }@ EventHandler public void onPlayerQuit(PlayerQuitEvent playerQuitEvent)
-        {
-            Player player = playerQuitEvent.getPlayer();
-            Guild guild = this.plugin.getGuildManager().getPlayerGuild(player.getUniqueId());
-            if (guild != null)
-            {
-                for (GuildMember guildMember : guild.getMembers().values())
-                {
-                    Player player2;
-                    PlayerSettings playerSettings;
-                    if (guildMember.getUuid().equals(player.getUniqueId()) || !(playerSettings = this.plugin.getGuildManager().getPlayerSettings(guildMember.getUuid())).isNotifyOnlineStatus() || (player2 = Bukkit.getPlayer((UUID)guildMember.getUuid())) == null || !player2.isOnline()) continue;
-                    player2.sendMessage(ChatColor.YELLOW + player.getName() + " \u4e0b\u7ebf\u4e86");
-                }}
-
-            }@ EventHandler public void onPlayerDeath(PlayerDeathEvent playerDeathEvent)
-            {
-                Player player = playerDeathEvent.getEntity();
-                Player player2 = player.getKiller();
-                if (player2 != null && player2 != player)
-                {
-                    long l = this.plugin.getExperienceConfig().getPlayerKillExp();
-                    this.plugin.getGuildManager().addExperience(player2.getUniqueId(), l);
-                }}
-
+                online.sendMessage(ChatColor.YELLOW + player.getName() + " 上线了");
             }
+        }
+    }
+
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event)
+    {
+        Player player = event.getPlayer();
+        Guild guild = plugin.getGuildManager().getPlayerGuild(player.getUniqueId());
+        if (guild == null) return;
+        for (GuildMember member : guild.getMembers().values())
+        {
+            if (member.getUuid().equals(player.getUniqueId())) continue;
+            PlayerSettings settings = plugin.getGuildManager().getPlayerSettings(member.getUuid());
+            if (!settings.isNotifyOnlineStatus()) continue;
+            Player online = Bukkit.getPlayer(member.getUuid());
+            if (online != null && online.isOnline())
+            {
+                online.sendMessage(ChatColor.YELLOW + player.getName() + " 下线了");
+            }
+        }
+    }
+
+    @EventHandler
+    public void onPlayerDeath(PlayerDeathEvent event)
+    {
+        Player victim = event.getEntity();
+        Player killer = victim.getKiller();
+        if (killer != null && killer != victim)
+        {
+            long exp = plugin.getExperienceConfig().getPlayerKillExp();
+            plugin.getGuildManager().addExperience(killer.getUniqueId(), exp);
+        }
+    }
+}

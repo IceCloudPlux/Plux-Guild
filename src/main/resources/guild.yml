@@ -59,3 +59,12 @@ allow-self-demote:   false
 auto-kick-inactive-days: 0
 # 公会连续多少天无活跃自动标记为休眠（0 = 禁用）
 auto-dormant-days: 0
+
+# ---------- 聊天格式 ----------
+chat:
+  # 公会频道格式（/guild chat），可用占位符:
+  #   {tag_color} 标签颜色   {tag} 标签
+  #   {player} 玩家名        {message} 消息内容
+  format: "&6[公会] &f[{tag}] {player}&7: &f{message}"
+  # 管理频道格式（/guildochat），可用占位符: {player} {message}
+  officer-format: "&9[管理] &f{player}&7: &f{message}"
